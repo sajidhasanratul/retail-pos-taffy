@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Retail POS Login Panel">
+  <title>Sign In — ZenPos</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏪</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 10% 20%, rgb(90, 92, 234) 0%, rgb(32, 45, 107) 100%);
+      font-family: 'Inter', sans-serif;
+    }
+    .login-container {
+      width: 100%;
+      max-width: 420px;
+      padding: 20px;
+    }
+    .login-card {
+      border: none;
+      border-radius: var(--radius);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 40px 30px;
+      animation: fadeIn 0.5s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .logo-container {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+    .logo-icon {
+      font-size: 55px;
+      margin-bottom: 12px;
+      display: inline-block;
+    }
+    .logo-title {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--text-dark);
+      margin: 0;
+    }
+    .logo-subtitle {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 6px;
+      margin-bottom: 0;
+    }
+    .form-group {
+      margin-bottom: 18px;
+    }
+    .form-label {
+      display: block;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text-dark);
+      margin-bottom: 6px;
+    }
+    .form-input {
+      width: 100%;
+      height: 44px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0 14px;
+      font-size: 14px;
+      transition: all 0.2s;
+      background: #fff;
+    }
+    .form-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(90, 92, 234, 0.15);
+    }
+    .btn-login {
+      width: 100%;
+      height: 46px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 8px;
+    }
+    .btn-login:hover {
+      background: #474adb;
+      box-shadow: 0 4px 12px rgba(90, 92, 234, 0.3);
+    }
+    .btn-login:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+    }
+    .alert-error {
+      background: #fef2f2;
+      color: var(--danger);
+      border: 1px solid #fee2e2;
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .demo-accounts {
+      border-top: 1px solid var(--border-light);
+      margin-top: 25px;
+      padding-top: 18px;
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+    <div class="login-card">
+      <div class="logo-container">
+        <span class="logo-icon">🏪</span>
+        <h2 class="logo-title">ZenPos</h2>
+        <p class="logo-subtitle">Point of Sale Login Panel</p>
+      </div>
+
+      <div id="error-message" class="alert-error"></div>
+      <div id="info-message" style="display:none; background:#f0fdf4; color:#15803d; border: 1px solid #dcfce7; padding: 12px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; margin-bottom: 20px;"></div>
+
+      <!-- ── Login Form Section ─────────────────────── -->
+      <div id="login-section">
+        <form id="login-form">
+          <div class="form-group">
+            <label class="form-label" for="username">Username</label>
+            <input type="text" class="form-input" id="username" placeholder="Enter username" required autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="password">Password</label>
+            <input type="password" class="form-input" id="password" placeholder="Enter password" required autocomplete="current-password">
+          </div>
+          <div style="text-align: right; margin-top: -10px; margin-bottom: 18px;">
+            <a href="javascript:void(0)" id="link-forgot" style="color: var(--primary); font-size: 13px; font-weight: 600; text-decoration: none;">Forgot Password?</a>
+          </div>
+          <button type="submit" class="btn-login" id="btn-submit">Sign In 🚀</button>
+        </form>
+
+        <div class="demo-accounts">
+          <strong>Demo Accounts Setup:</strong><br>
+          • admin / admin (Full access)<br>
+          • manager / manager (Inventory & Sales)<br>
+          • cashier / cashier (Billing desk only)
+        </div>
+      </div>
+
+      <!-- ── Forgot Password Section ────────────────── -->
+      <div id="forgot-section" style="display:none;">
+        <form id="forgot-form">
+          <p style="font-size: 13px; color: #64748b; margin-top: 0; margin-bottom: 18px; line-height: 1.5;">
+            Enter your Username or Email address below. We'll search for your account and send a password recovery link to your registered email.
+          </p>
+          <div class="form-group">
+            <label class="form-label" for="forgot-identity">Username or Email</label>
+            <input type="text" class="form-input" id="forgot-identity" placeholder="e.g. admin or admin@example.com" required>
+          </div>
+          <button type="submit" class="btn-login" id="btn-forgot-submit">Send Reset Link 📧</button>
+          <div style="text-align: center; margin-top: 18px;">
+            <a href="javascript:void(0)" id="link-login-back" style="color: #64748b; font-size: 13px; font-weight: 600; text-decoration: none;">← Back to Sign In</a>
+          </div>
+        </form>
+      </div>
+
+      <!-- ── Reset Password Section ─────────────────── -->
+      <div id="reset-section" style="display:none;">
+        <form id="reset-form">
+          <p style="font-size: 13px; color: #64748b; margin-top: 0; margin-bottom: 18px; line-height: 1.5;">
+            Create a secure new password for your account. Ensure it is different from your previous password.
+          </p>
+          <div class="form-group">
+            <label class="form-label" for="reset-password">New Password</label>
+            <input type="password" class="form-input" id="reset-password" placeholder="Enter new password" required minlength="4">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reset-confirm">Confirm New Password</label>
+            <input type="password" class="form-input" id="reset-confirm" placeholder="Re-enter new password" required minlength="4">
+          </div>
+          <button type="submit" class="btn-login" id="btn-reset-submit">Reset Password 🔑</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    'use strict';
+
+    // Parse token from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const resetToken = urlParams.get('token');
+
+    // UI elements
+    const loginSection = document.getElementById('login-section');
+    const forgotSection = document.getElementById('forgot-section');
+    const resetSection = document.getElementById('reset-section');
+
+    const loginForm = document.getElementById('login-form');
+    const forgotForm = document.getElementById('forgot-form');
+    const resetForm = document.getElementById('reset-form');
+
+    const errorDiv = document.getElementById('error-message');
+    const infoDiv = document.getElementById('info-message');
+
+    // Redirect immediately if already logged in (only if not doing password reset)
+    if (!resetToken) {
+      const activeUser = localStorage.getItem('pos_user');
+      if (activeUser) {
+        try {
+          const user = JSON.parse(activeUser);
+          window.location.href = user.role === 'cashier' ? '/new-order' : '/dashboard';
+        } catch (e) {
+          localStorage.removeItem('pos_user');
+        }
+      }
+    } else {
+      // Show reset section if token is present
+      loginSection.style.display = 'none';
+      forgotSection.style.display = 'none';
+      resetSection.style.display = 'block';
+    }
+
+    // Toggle forms
+    document.getElementById('link-forgot').onclick = () => {
+      errorDiv.style.display = 'none';
+      infoDiv.style.display = 'none';
+      loginSection.style.display = 'none';
+      forgotSection.style.display = 'block';
+    };
+
+    document.getElementById('link-login-back').onclick = () => {
+      errorDiv.style.display = 'none';
+      infoDiv.style.display = 'none';
+      forgotSection.style.display = 'none';
+      loginSection.style.display = 'block';
+    };
+
+    // Form handlers
+    loginForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const submitBtn = document.getElementById('btn-submit');
+
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'Signing In... ⌛';
+      errorDiv.style.display = 'none';
+      infoDiv.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Login verification failed');
+        }
+
+        if (data.success && data.user) {
+          localStorage.setItem('pos_user', JSON.stringify(data.user));
+          window.location.href = data.user.role === 'cashier' ? '/new-order' : '/dashboard';
+        } else {
+          throw new Error('Authentication failed');
+        }
+      } catch (err) {
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'Sign In 🚀';
+        errorDiv.innerText = '⚠️ ' + err.message;
+        errorDiv.style.display = 'block';
+      }
+    };
+
+    forgotForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const identity = document.getElementById('forgot-identity').value.trim();
+      const submitBtn = document.getElementById('btn-forgot-submit');
+
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'Searching account... ⌛';
+      errorDiv.style.display = 'none';
+      infoDiv.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/auth/forgot-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identity })
+        });
+        
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Recovery request failed');
+        }
+
+        infoDiv.innerText = '📨 ' + data.message;
+        if (data._debugLink) {
+          // Print debug link in console as well for direct click access
+          console.log('ZenPos Dev Reset Link:', data._debugLink);
+          infoDiv.innerHTML += `<br><br><strong style="color:#047857;">[Dev Sandbox Mode]</strong> Reset Link:<br><a href="${data._debugLink}" style="color:#2563eb; word-break:break-all; text-decoration:underline;">${data._debugLink}</a>`;
+        }
+        infoDiv.style.display = 'block';
+
+        forgotForm.reset();
+        forgotSection.style.display = 'none';
+        loginSection.style.display = 'block';
+      } catch (err) {
+        errorDiv.innerText = '⚠️ ' + err.message;
+        errorDiv.style.display = 'block';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'Send Reset Link 📧';
+      }
+    };
+
+    resetForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const newPassword = document.getElementById('reset-password').value;
+      const confirmPassword = document.getElementById('reset-confirm').value;
+      const submitBtn = document.getElementById('btn-reset-submit');
+
+      if (newPassword !== confirmPassword) {
+        errorDiv.innerText = '⚠️ Passwords do not match!';
+        errorDiv.style.display = 'block';
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'Resetting password... ⌛';
+      errorDiv.style.display = 'none';
+      infoDiv.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/auth/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: resetToken, newPassword })
+        });
+        
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Password reset failed');
+        }
+
+        // Clean url query parameter token
+        window.history.replaceState(null, '', window.location.pathname);
+
+        infoDiv.innerText = '✅ ' + data.message;
+        infoDiv.style.display = 'block';
+
+        resetForm.reset();
+        resetSection.style.display = 'none';
+        loginSection.style.display = 'block';
+      } catch (err) {
+        errorDiv.innerText = '⚠️ ' + err.message;
+        errorDiv.style.display = 'block';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'Reset Password 🔑';
+      }
+    };
+  </script>
+</body>
+</html>
