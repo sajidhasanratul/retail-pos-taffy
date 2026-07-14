@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Professional Retail POS System – Manage sales, inventory, customers, and reports with ease.">
+  <title>ZenPos — Point of Sale System</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏪</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <!-- ═══ Sidebar ═══ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <span class="logo-icon">🏪</span>
+        <h1 class="logo-text">ZenPos</h1>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav" id="sidebar-nav">
+      <!-- Dashboard -->
+      <div id="nav-grp-dashboard">
+        <a href="/dashboard" class="nav-item" data-page="dashboard">
+          <span class="nav-icon">📊</span><span class="nav-text">POS Dashboard</span>
+        </a>
+      </div>
+
+      <!-- Sales Group -->
+      <div class="nav-group" id="nav-grp-sales">
+        <div class="nav-group-header" data-group="sales">
+          <span class="nav-icon">🛒</span><span class="nav-text">Sales Operations</span><span class="nav-arrow">&#9656;</span>
+        </div>
+        <div class="nav-group-items">
+          <a href="/sales-list"   class="nav-item sub-item" data-page="sales-list">Sales List</a>
+          <a href="/new-order"    class="nav-item sub-item" data-page="new-order">New Sale / Billing</a>
+          <a href="/sales-return" class="nav-item sub-item" data-page="sales-return">Process Return</a>
+          <a href="/return-list"  class="nav-item sub-item" data-page="return-list">Return Records</a>
+        </div>
+      </div>
+
+      <!-- Customers -->
+      <div id="nav-grp-catalog">
+        <a href="/customers" class="nav-item" data-page="customers">
+          <span class="nav-icon">👥</span><span class="nav-text">Customers</span>
+        </a>
+
+        <!-- Products -->
+        <a href="/products" class="nav-item" data-page="products">
+          <span class="nav-icon">📦</span><span class="nav-text">Products Catalog</span>
+        </a>
+      </div>
+
+      <!-- Expenses -->
+      <div id="nav-grp-expenses">
+        <a href="/expenses" class="nav-item" data-page="expenses">
+          <span class="nav-icon">💸</span><span class="nav-text">Expenses</span>
+        </a>
+      </div>
+
+      <!-- Reports Group -->
+      <div class="nav-group" id="nav-grp-reports">
+        <div class="nav-group-header" data-group="reports">
+          <span class="nav-icon">📈</span><span class="nav-text">Analytical Reports</span><span class="nav-arrow">&#9656;</span>
+        </div>
+        <div class="nav-group-items">
+          <a href="/reports/daily-sale"     class="nav-item sub-item" data-page="reports">Daily Sale Report</a>
+          <a href="/reports/product-profit"  class="nav-item sub-item" data-page="reports">Product Profit Report</a>
+          <a href="/reports/top-selling"     class="nav-item sub-item" data-page="reports">Top Selling Products</a>
+          <a href="/reports/slow-selling"    class="nav-item sub-item" data-page="reports">Slow Selling Products</a>
+          <a href="/reports/payment-method"  class="nav-item sub-item" data-page="reports">Payment Method Report</a>
+          <a href="/reports/stock-value"     class="nav-item sub-item" data-page="reports">Stock Value Report</a>
+          <a href="/reports/sales-summary"   class="nav-item sub-item" data-page="reports">Sales Summary Report</a>
+          <a href="/reports/overall-profit"  class="nav-item sub-item" data-page="reports">Overall Profit Report</a>
+        </div>
+      </div>
+
+      <!-- Access Control -->
+      <div id="nav-grp-users">
+        <a href="/users" class="nav-item" data-page="users">
+          <span class="nav-icon">🛡️</span><span class="nav-text">Access Control</span>
+        </a>
+      </div>
+
+      <!-- Coupons -->
+      <div id="nav-grp-coupons">
+        <a href="/coupons" class="nav-item" data-page="coupons">
+          <span class="nav-icon">🏷️</span><span class="nav-text">Manage Coupons</span>
+        </a>
+      </div>
+
+      <!-- Settings link -->
+      <div class="nav-divider"></div>
+      <div id="nav-grp-settings">
+        <a href="javascript:void(0)" class="nav-item" id="nav-settings">
+          <span class="nav-icon">⚙️</span><span class="nav-text">Invoice Settings</span>
+        </a>
+      </div>
+
+
+      <!-- Logout -->
+      <a href="javascript:void(0)" class="nav-item" id="nav-logout" style="color:var(--danger);">
+        <span class="nav-icon">🚪</span><span class="nav-text">Sign Out</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- ═══ Main Wrapper ═══ -->
+  <main class="main-wrapper" id="main-wrapper">
+    <!-- Top Header -->
+    <header class="top-header" id="top-header">
+      <div class="header-left">
+        <button class="menu-toggle" id="menu-toggle" aria-label="Toggle Sidebar">
+          <span></span><span></span><span></span>
+        </button>
+        <nav class="breadcrumb" id="breadcrumb" aria-label="Breadcrumb">
+          <span class="bc-item bc-active">Dashboard</span>
+        </nav>
+      </div>
+      <div class="header-right" style="display:flex; align-items:center; gap:20px;">
+        <span class="header-date" id="header-date"></span>
+        <div id="user-profile-badge"></div>
+      </div>
+    </header>
+
+    <!-- Dynamic Content -->
+    <div class="main-content" id="main-content">
+      <div class="loading-splash">
+        <div class="spinner"></div>
+        <p>Loading ZenPos…</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- ═══ Scripts (loaded in dependency order) ═══ -->
+  <script src="js/data/store.js"></script>
+  <script src="js/utils/helpers.js"></script>
+  <script src="js/router.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/new-order.js"></script>
+  <script src="js/edit-order.js"></script>
+  <script src="js/sales-list.js"></script>
+  <script src="js/sales-return.js"></script>
+  <script src="js/return-list.js"></script>
+  <script src="js/reports.js"></script>
+  <script src="js/products.js"></script>
+  <script src="js/customers.js"></script>
+  <script src="js/users.js"></script>
+  <script src="js/expenses.js"></script>
+  <script src="js/coupons.js"></script>
+  <script src="js/app.js"></script>
+  <div class="modal-overlay" id="global-modal-overlay"></div>
+</body>
+</html>

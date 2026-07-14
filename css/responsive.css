@@ -1,0 +1,147 @@
+/* ═══════════════════════════════════════════════════
+   RetailPOS — Responsive Breakpoints
+   ═══════════════════════════════════════════════════ */
+
+/* ── Tablet (≤1024px) ──────────────────────────── */
+@media (max-width: 1024px) {
+  .sidebar {
+    transform: translateX(-100%);
+    z-index: 200;
+  }
+
+  .sidebar.collapsed { transform: translateX(-100%); }
+  .sidebar.mobile-open { transform: translateX(0); }
+
+  .main-wrapper { margin-left: 0 !important; }
+
+  .order-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .order-summary {
+    position: static;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  }
+
+  .grid-2 { grid-template-columns: 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr; }
+  .grid-4 { grid-template-columns: 1fr 1fr; }
+
+  .variation-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+}
+
+/* ── Mobile overlay ────────────────────────────── */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  z-index: 199;
+  display: none;
+}
+
+.sidebar-overlay.active { display: block; }
+
+/* ── Small tablets / Large phones (≤768px) ─────── */
+@media (max-width: 768px) {
+  .main-content {
+    padding: 16px;
+  }
+
+  .page-header {
+    padding: 16px 20px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .page-title { font-size: 18px; }
+
+  .filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-box { min-width: unset; }
+
+  .data-table { font-size: 12px; }
+  .data-table th, .data-table td { padding: 8px 10px; }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .stat-card { padding: 14px; }
+  .stat-value { font-size: 18px; }
+  .stat-icon { width: 40px; height: 40px; font-size: 18px; }
+
+  .grid-3, .grid-4 { grid-template-columns: 1fr; }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-row {
+    flex-direction: column;
+  }
+
+  .modal {
+    width: 95%;
+    max-height: 90vh;
+  }
+
+  .customer-meta {
+    flex-wrap: wrap;
+  }
+
+  .product-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .variation-row {
+    grid-template-columns: 1fr;
+  }
+
+  .header-date { display: none; }
+
+  .top-header { padding: 0 16px; }
+}
+
+/* ── Small phones (≤480px) ─────────────────────── */
+@media (max-width: 480px) {
+  .main-content { padding: 12px; }
+
+  .page-header { padding: 14px 16px; margin-bottom: 16px; }
+  .page-title { font-size: 16px; }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .stat-card { gap: 12px; }
+
+  .btn { padding: 8px 14px; font-size: 12px; }
+
+  .form-input, .form-select { padding: 8px 12px; font-size: 13px; }
+
+  .summary-row.total { font-size: 16px; }
+
+  .toast {
+    left: 12px;
+    right: 12px;
+    top: auto;
+    bottom: 16px;
+    transform: translateY(120%);
+  }
+  .toast.show { transform: translateY(0); }
+}
