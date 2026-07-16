@@ -450,6 +450,11 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = Date.now() + 3600000; // 1 hour from now
 
+    console.log(`[Forgot Password] Generating reset token:`);
+    console.log(`- User Email: ${user.email}`);
+    console.log(`- Token: ${token}`);
+    console.log(`- expiresAt (milliseconds): ${expiresAt}`);
+
     await dbQuery(`DELETE FROM password_resets WHERE email = ?`, [user.email]);
     await dbQuery(`INSERT INTO password_resets (email, token, expires_at) VALUES (?, ?, ?)`, [user.email, token, expiresAt]);
 
@@ -520,6 +525,12 @@ app.post('/api/auth/reset-password', async (req, res) => {
     const resetRequest = rows[0];
     const now = Date.now();
     const expiresAt = parseInt(resetRequest.expires_at);
+
+    console.log(`[Reset Password] Validating token submission:`);
+    console.log(`- DB Entry expires_at raw: ${resetRequest.expires_at} (type: ${typeof resetRequest.expires_at})`);
+    console.log(`- parsed expiresAt: ${expiresAt}`);
+    console.log(`- now: ${now}`);
+    console.log(`- Is now > expiresAt? ${now > expiresAt}`);
 
     if (now > expiresAt) {
       await dbQuery(`DELETE FROM password_resets WHERE token = ?`, [token]);
