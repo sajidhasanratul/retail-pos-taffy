@@ -44,12 +44,12 @@ transporter.verify((error, success) => {
   } else {
     console.log('\n✅ SMTP Server is ready to take messages!');
     
-    const mailOptions = {
-      from: from || user,
-      to: user, // Send to your own authenticated email address as a test
-      subject: 'ZenPos SMTP Test Mail',
-      text: 'Hello! This is a test email sent from the ZenPos POS configuration test script. If you receive this, your SMTP settings are 100% correct!'
-    };
+const mailOptions = {
+  from: from || user,
+  to: 'sajidhasan72885@gmail.com', // 👈 Put your Gmail or another email here
+  subject: 'ZenPos SMTP Test Mail',
+  text: '...'
+};
     
     console.log(`Sending a test email to ${user}...`);
     transporter.sendMail(mailOptions, (err, info) => {
