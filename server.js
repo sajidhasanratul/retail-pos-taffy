@@ -179,14 +179,12 @@ const initDB = async () => {
     email VARCHAR(255)
   )`);
 
+  // Unconditionally drop password_resets to force recreation with BIGINT on VPS
   try {
-    const columnsPR = await dbQuery(`SHOW COLUMNS FROM password_resets LIKE 'expires_at'`);
-    if (columnsPR.length > 0 && columnsPR[0].Type.toLowerCase().includes('datetime')) {
-      await dbQuery(`DROP TABLE password_resets`);
-      console.log('Database Migration: Dropped old password_resets table to update column types.');
-    }
+    await dbQuery(`DROP TABLE IF EXISTS password_resets`);
+    console.log('Database Migration: Dropped password_resets table to force BIGINT column type.');
   } catch (err) {
-    // Ignore if table doesn't exist
+    console.warn('Warning dropping password_resets table:', err.message);
   }
 
   await dbQuery(`CREATE TABLE IF NOT EXISTS password_resets (
