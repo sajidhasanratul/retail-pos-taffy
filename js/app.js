@@ -162,7 +162,7 @@
       if (user) {
         let roleName = user.role.toUpperCase();
         el.innerHTML = `
-          <div style="display:flex; align-items:center; gap:8px; cursor:pointer;" class="profile-click-trigger" title="Click to update password">
+          <div style="display:flex; align-items:center; gap:8px; cursor:pointer;" class="profile-click-trigger" title="Click to view profile details">
             <div style="text-align:right;">
               <div style="font-weight:700; color:var(--text-dark); font-size:13px;">${POS.Helpers.esc(user.name)}</div>
               <div style="font-size:10px; color:#64748b; font-weight:600; text-transform:uppercase;">${roleName}</div>
@@ -172,31 +172,67 @@
             </div>
           </div>
         `;
-        el.querySelector('.profile-click-trigger').onclick = () => this.showChangePasswordModal();
+        el.querySelector('.profile-click-trigger').onclick = () => this.showUserProfileModal();
       } else {
         el.innerHTML = '';
       }
     },
 
-    showChangePasswordModal() {
+    showUserProfileModal() {
       const S = POS.Store;
       const H = POS.Helpers;
+      const user = S.getCurrentUser();
+      if (!user) return;
 
-      let modalOverlay = document.getElementById('global-password-modal-overlay');
+      let modalOverlay = document.getElementById('global-profile-modal-overlay');
       if (!modalOverlay) {
         modalOverlay = document.createElement('div');
-        modalOverlay.id = 'global-password-modal-overlay';
+        modalOverlay.id = 'global-profile-modal-overlay';
         modalOverlay.className = 'modal-overlay';
         document.body.appendChild(modalOverlay);
       }
 
+      let roleLabel = 'Cashier';
+      let roleBg = '#6b7280';
+      if (user.role === 'admin') {
+        roleLabel = 'System Admin';
+        roleBg = '#5a5cea';
+      } else if (user.role === 'manager') {
+        roleLabel = 'Store Manager';
+        roleBg = '#f59e0b';
+      }
+
       modalOverlay.innerHTML = `
-        <div class="modal animate" style="max-width:400px;">
+        <div class="modal animate" style="max-width:440px;">
           <div class="modal-header">
-            <h3>🔑 Update Password</h3>
-            <button class="modal-close" id="modal-close-global-pwd">&times;</button>
+            <h3>👤 User Account Profile</h3>
+            <button class="modal-close" id="modal-close-global-profile">&times;</button>
           </div>
           <div class="modal-body">
+            <!-- Profile Info Panel -->
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:var(--radius-sm); padding:16px; margin-bottom:20px;">
+              <div style="display:flex; align-items:center; gap:16px; margin-bottom:14px;">
+                <div style="width:48px; height:48px; border-radius:50%; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:18px;">
+                  ${user.name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <h4 style="margin:0; font-size:15px; font-weight:700; color:var(--text-dark);">${H.esc(user.name)}</h4>
+                  <span class="badge" style="background:${roleBg}; color:#fff; font-size:10px; font-weight:700; text-transform:uppercase; padding:2px 8px; border-radius:10px; display:inline-block; margin-top:4px;">${roleLabel}</span>
+                </div>
+              </div>
+              
+              <div style="display:grid; grid-template-columns: 110px 1fr; row-gap:10px; font-size:13px; line-height:1.4;">
+                <span style="font-weight:600; color:#64748b;">Username:</span>
+                <span style="font-weight:700; color:var(--text-dark);">${H.esc(user.username)}</span>
+                
+                <span style="font-weight:600; color:#64748b;">Email Address:</span>
+                <span style="font-weight:600; color:var(--text-dark);">${user.email ? H.esc(user.email) : '<span style="color:#ef4444; font-style:italic;">No Email Added</span>'}</span>
+              </div>
+            </div>
+
+            <!-- Password Update Fields -->
+            <h4 style="margin-top:0; margin-bottom:12px; font-size:14px; font-weight:700; color:var(--text-dark); border-bottom: 1px solid var(--border-light); padding-bottom:6px;">🔑 Change Account Password</h4>
+            
             <div class="form-group mb-2">
               <label class="form-label">Current Password</label>
               <input type="password" class="form-input" id="pwd-old" placeholder="Enter current password" required>
@@ -211,8 +247,8 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button class="btn btn-secondary" id="btn-global-pwd-cancel">Cancel</button>
-            <button class="btn btn-primary" id="btn-global-pwd-save">Save Password</button>
+            <button class="btn btn-secondary" id="btn-global-profile-cancel">Close</button>
+            <button class="btn btn-primary" id="btn-global-pwd-save">Update Password</button>
           </div>
         </div>
       `;
@@ -220,8 +256,8 @@
       modalOverlay.classList.add('active');
 
       const close = () => modalOverlay.classList.remove('active');
-      modalOverlay.querySelector('#modal-close-global-pwd').onclick = close;
-      modalOverlay.querySelector('#btn-global-pwd-cancel').onclick = close;
+      modalOverlay.querySelector('#modal-close-global-profile').onclick = close;
+      modalOverlay.querySelector('#btn-global-profile-cancel').onclick = close;
 
       modalOverlay.querySelector('#btn-global-pwd-save').onclick = async () => {
         const oldP = document.getElementById('pwd-old').value;
