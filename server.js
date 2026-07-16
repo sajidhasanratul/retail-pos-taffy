@@ -179,10 +179,20 @@ const initDB = async () => {
     email VARCHAR(255)
   )`);
 
+  try {
+    const columnsPR = await dbQuery(`SHOW COLUMNS FROM password_resets LIKE 'expires_at'`);
+    if (columnsPR.length > 0 && columnsPR[0].Type.toLowerCase().includes('datetime')) {
+      await dbQuery(`DROP TABLE password_resets`);
+      console.log('Database Migration: Dropped old password_resets table to update column types.');
+    }
+  } catch (err) {
+    // Ignore if table doesn't exist
+  }
+
   await dbQuery(`CREATE TABLE IF NOT EXISTS password_resets (
     email VARCHAR(255) NOT NULL,
     token VARCHAR(255) PRIMARY KEY,
-    expires_at DATETIME NOT NULL
+    expires_at BIGINT NOT NULL
   )`);
 
   // Auto-migration check: If users lacks email column, add it.
@@ -440,11 +450,10 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     }
 
     const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 3600000);
-    const formattedExpiresAt = expiresAt.toISOString().slice(0, 19).replace('T', ' ');
+    const expiresAt = Date.now() + 3600000; // 1 hour from now
 
     await dbQuery(`DELETE FROM password_resets WHERE email = ?`, [user.email]);
-    await dbQuery(`INSERT INTO password_resets (email, token, expires_at) VALUES (?, ?, ?)`, [user.email, token, formattedExpiresAt]);
+    await dbQuery(`INSERT INTO password_resets (email, token, expires_at) VALUES (?, ?, ?)`, [user.email, token, expiresAt]);
 
     const resetLink = `${req.protocol}://${req.get('host')}/login.html?token=${token}`;
 
@@ -511,8 +520,8 @@ app.post('/api/auth/reset-password', async (req, res) => {
     }
 
     const resetRequest = rows[0];
-    const now = new Date();
-    const expiresAt = new Date(resetRequest.expires_at);
+    const now = Date.now();
+    const expiresAt = parseInt(resetRequest.expires_at);
 
     if (now > expiresAt) {
       await dbQuery(`DELETE FROM password_resets WHERE token = ?`, [token]);
