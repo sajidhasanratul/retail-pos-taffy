@@ -179,12 +179,14 @@ const initDB = async () => {
     email VARCHAR(255)
   )`);
 
-  // Unconditionally drop password_resets to force recreation with BIGINT on VPS
   try {
-    await dbQuery(`DROP TABLE IF EXISTS password_resets`);
-    console.log('Database Migration: Dropped password_resets table to force BIGINT column type.');
+    const columnsPR = await dbQuery(`SHOW COLUMNS FROM password_resets LIKE 'expires_at'`);
+    if (columnsPR.length > 0 && columnsPR[0].Type.toLowerCase().includes('datetime')) {
+      await dbQuery(`DROP TABLE password_resets`);
+      console.log('Database Migration: Dropped old password_resets table to update column types to BIGINT.');
+    }
   } catch (err) {
-    console.warn('Warning dropping password_resets table:', err.message);
+    // Ignore
   }
 
   await dbQuery(`CREATE TABLE IF NOT EXISTS password_resets (
@@ -365,9 +367,9 @@ const verifyRole = (roles) => {
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { username, password } = req.body;
-    const rows = await dbQuery(`SELECT * FROM users WHERE username = ? AND password = ?`, [username, password]);
+    const rows = await dbQuery(`SELECT * FROM users WHERE (username = ? OR email = ?) AND password = ?`, [username, username, password]);
     if (rows.length === 0) {
-      return res.status(400).json({ error: 'Invalid username or password' });
+      return res.status(400).json({ error: 'Invalid username/email or password' });
     }
     const user = rows[0];
     res.json({
@@ -376,7 +378,8 @@ app.post('/api/auth/login', async (req, res) => {
         id: user.id,
         username: user.username,
         name: user.name,
-        role: user.role
+        role: user.role,
+        email: user.email
       }
     });
   } catch (err) {
