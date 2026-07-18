@@ -299,10 +299,42 @@ const initDB = async () => {
       ('store_name', 'ZenPos Store'),
       ('store_address', '123 Market Street, Dhaka'),
       ('store_phone', '01700000000'),
-      ('invoice_style', 'style-1')`);
+      ('invoice_style', 'theme-modern'),
+      ('default_print_type', 'receipt'),
+      ('receipt_style', 'style-1'),
+      ('label_template', 'standard'),
+      ('label_preset', '50x30'),
+      ('label_width', '50'),
+      ('label_height', '30'),
+      ('label_show_store', '1'),
+      ('label_show_name', '1'),
+      ('label_show_barcode', '1'),
+      ('label_show_human_readable', '1'),
+      ('label_show_qr', '0'),
+      ('label_show_sku', '1'),
+      ('label_show_price', '1'),
+      ('label_show_attribs', '0')`);
   } else {
-    // Make sure invoice_style entry is present if table already existed
-    await dbQuery(`INSERT IGNORE INTO settings (key_name, val) VALUES ('invoice_style', 'style-1')`);
+    const defaultLabelKeys = {
+      'invoice_style': 'theme-modern',
+      'default_print_type': 'receipt',
+      'receipt_style': 'style-1',
+      'label_template': 'standard',
+      'label_preset': '50x30',
+      'label_width': '50',
+      'label_height': '30',
+      'label_show_store': '1',
+      'label_show_name': '1',
+      'label_show_barcode': '1',
+      'label_show_human_readable': '1',
+      'label_show_qr': '0',
+      'label_show_sku': '1',
+      'label_show_price': '1',
+      'label_show_attribs': '0'
+    };
+    for (const [key, val] of Object.entries(defaultLabelKeys)) {
+      await dbQuery(`INSERT IGNORE INTO settings (key_name, val) VALUES (?, ?)`, [key, val]);
+    }
   }
 
   // Seeding Catalog if empty
@@ -566,18 +598,11 @@ app.get('/api/settings', async (req, res) => {
 
 app.put('/api/settings', verifyRole(['admin', 'manager']), async (req, res) => {
   try {
-    const { store_name, store_address, store_phone, invoice_style, default_print_type, receipt_style } = req.body;
-    if (store_name !== undefined) await dbQuery(`UPDATE settings SET val = ? WHERE key_name = 'store_name'`, [store_name]);
-    if (store_address !== undefined) await dbQuery(`UPDATE settings SET val = ? WHERE key_name = 'store_address'`, [store_address]);
-    if (store_phone !== undefined) await dbQuery(`UPDATE settings SET val = ? WHERE key_name = 'store_phone'`, [store_phone]);
-    if (invoice_style !== undefined) {
-      await dbQuery(`INSERT INTO settings (key_name, val) VALUES ('invoice_style', ?) ON DUPLICATE KEY UPDATE val = ?`, [invoice_style, invoice_style]);
-    }
-    if (default_print_type !== undefined) {
-      await dbQuery(`INSERT INTO settings (key_name, val) VALUES ('default_print_type', ?) ON DUPLICATE KEY UPDATE val = ?`, [default_print_type, default_print_type]);
-    }
-    if (receipt_style !== undefined) {
-      await dbQuery(`INSERT INTO settings (key_name, val) VALUES ('receipt_style', ?) ON DUPLICATE KEY UPDATE val = ?`, [receipt_style, receipt_style]);
+    const settings = req.body;
+    for (const [key, val] of Object.entries(settings)) {
+      if (val !== undefined) {
+        await dbQuery(`INSERT INTO settings (key_name, val) VALUES (?, ?) ON DUPLICATE KEY UPDATE val = ?`, [key, String(val), String(val)]);
+      }
     }
     res.json({ success: true });
   } catch (err) {
