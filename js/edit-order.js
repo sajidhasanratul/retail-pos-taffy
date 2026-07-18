@@ -276,7 +276,7 @@
         const matches = [];
 
         prods.forEach(p => {
-          const mainMatch = p.name.toLowerCase().includes(query) || p.sku.toLowerCase().includes(query) || (p.barcode && p.barcode.includes(query));
+          const mainMatch = p.name.toLowerCase().includes(query) || p.sku.toLowerCase().includes(query) || (p.barcode && p.barcode.includes(query)) || (p.tag && p.tag.toLowerCase().includes(query));
           if (mainMatch) {
             if (p.variations && p.variations.length > 0) {
               p.variations.forEach(v => {
