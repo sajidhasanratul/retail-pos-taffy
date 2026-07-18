@@ -28,6 +28,7 @@
         }
       });
       R.register('/users',           () => POS.Users.render());
+      R.register('/label-printer',    () => POS.LabelPrinter.render());
 
       R.init();
       this._setupSidebar();
@@ -296,51 +297,137 @@
         mc.innerHTML = `
           <div class="page-header">
             <div>
-              <h2 class="page-title">⚙️ Invoice Settings</h2>
-              <p class="page-subtitle">Configure printed store receipt details for your invoices.</p>
+              <h2 class="page-title">⚙️ System & Printing Settings</h2>
+              <p class="page-subtitle">Configure printed store receipt templates, paper invoices, and default barcode label designs.</p>
             </div>
           </div>
-          <div class="card" style="max-width:600px">
-            <div class="card-body" style="display:flex; flex-direction:column; gap:16px;">
-              <div class="form-group">
-                <label class="form-label">Store / Company Name</label>
-                <input type="text" class="form-input" id="set-store-name" value="Fetching...">
+          
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; max-width:1150px; align-items:start;" class="fade-in">
+            
+            <!-- Left Card: Invoice & Receipt Settings -->
+            <div class="card">
+              <div class="card-header">
+                <h3>🧾 Invoice & Receipt Configurations</h3>
               </div>
-              <div class="form-group">
-                <label class="form-label">Store Address</label>
-                <input type="text" class="form-input" id="set-store-address" value="Fetching...">
+              <div class="card-body" style="display:flex; flex-direction:column; gap:16px;">
+                <div class="form-group">
+                  <label class="form-label">Store / Company Name</label>
+                  <input type="text" class="form-input" id="set-store-name" value="Fetching...">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Store Address</label>
+                  <input type="text" class="form-input" id="set-store-address" value="Fetching...">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Contact / Phone Number</label>
+                  <input type="text" class="form-input" id="set-store-phone" value="Fetching...">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Default Print Format</label>
+                  <select class="form-select" id="set-print-type">
+                    <option value="receipt">Thermal Receipt (80mm)</option>
+                    <option value="invoice">Paper Invoice (A4/A5)</option>
+                  </select>
+                </div>
+                <div class="form-group" id="group-invoice-style">
+                  <label class="form-label">Paper Invoice Theme</label>
+                  <select class="form-select" id="set-invoice-style">
+                    <option value="theme-modern">Modern Minimalist</option>
+                    <option value="theme-classic">Classic Business</option>
+                    <option value="theme-compact">Compact Invoice</option>
+                  </select>
+                </div>
+                <div class="form-group" id="group-receipt-style">
+                  <label class="form-label">Thermal Receipt Theme</label>
+                  <select class="form-select" id="set-receipt-style">
+                    <option value="style-1">Style 1: Standard Minimalist</option>
+                    <option value="style-2">Style 2: Classic Bordered</option>
+                    <option value="style-3">Style 3: Modern Elegant (Centered)</option>
+                  </select>
+                </div>
               </div>
-              <div class="form-group">
-                <label class="form-label">Contact / Phone Number</label>
-                <input type="text" class="form-input" id="set-store-phone" value="Fetching...">
-              </div>
-              <div class="form-group">
-                <label class="form-label">Default Print Format</label>
-                <select class="form-select" id="set-print-type">
-                  <option value="receipt">Thermal Receipt (80mm)</option>
-                  <option value="invoice">Paper Invoice (A4/A5)</option>
-                </select>
-              </div>
-              <div class="form-group" id="group-invoice-style">
-                <label class="form-label">Paper Invoice Theme</label>
-                <select class="form-select" id="set-invoice-style">
-                  <option value="theme-modern">Modern Minimalist</option>
-                  <option value="theme-classic">Classic Business</option>
-                  <option value="theme-compact">Compact Invoice</option>
-                </select>
-              </div>
-              <div class="form-group" id="group-receipt-style">
-                <label class="form-label">Thermal Receipt Theme</label>
-                <select class="form-select" id="set-receipt-style">
-                  <option value="style-1">Style 1: Standard Minimalist</option>
-                  <option value="style-2">Style 2: Classic Bordered</option>
-                  <option value="style-3">Style 3: Modern Elegant (Centered)</option>
-                </select>
-              </div>
-              <button class="btn btn-primary" id="btn-save-settings" style="padding:14px; font-weight:700;" disabled>
-                💾 Save Settings
-              </button>
             </div>
+
+            <!-- Right Card: Barcode Label Settings -->
+            <div class="card">
+              <div class="card-header">
+                <h3>🏷️ Barcode Label Template Defaults</h3>
+              </div>
+              <div class="card-body" style="display:flex; flex-direction:column; gap:16px;">
+                <div class="form-group">
+                  <label class="form-label">Default Design Template</label>
+                  <select class="form-select" id="set-label-template">
+                    <option value="standard">Standard Retail</option>
+                    <option value="clothing">Clothing / Tag Label</option>
+                    <option value="barcode_only">Barcode Only Sticker</option>
+                    <option value="price_tag">Price Tag Sticker</option>
+                    <option value="premium">Premium Brand Tag</option>
+                    <option value="shelf">Shelf / Bin Label</option>
+                    <option value="sale_discount">Sale / Promo Tag</option>
+                    <option value="qr_only">QR Code Sticker</option>
+                    <option value="warehouse">Warehouse Label</option>
+                    <option value="small_sticker">Small Sticker (Compact)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Default Dimensions Preset</label>
+                  <select class="form-select" id="set-label-preset">
+                    <option value="40x25">40 × 25 mm</option>
+                    <option value="50x30">50 × 30 mm</option>
+                    <option value="58x40">58 × 40 mm</option>
+                    <option value="70x50">70 × 50 mm</option>
+                    <option value="80x50">80 × 50 mm</option>
+                    <option value="100x50">100 × 50 mm</option>
+                    <option value="custom">Custom Size (mm)</option>
+                  </select>
+                </div>
+                <div class="form-group" id="set-lbl-custom-dims" style="display:none; gap:10px;">
+                  <div style="flex:1;">
+                    <label class="form-label">Width (mm)</label>
+                    <input type="number" class="form-input" id="set-label-width" value="50" min="10" max="250">
+                  </div>
+                  <div style="flex:1;">
+                    <label class="form-label">Height (mm)</label>
+                    <input type="number" class="form-input" id="set-label-height" value="30" min="10" max="250">
+                  </div>
+                </div>
+
+                <div style="border-top:1px solid #edf2f7; padding-top:10px;">
+                  <h4 style="margin:0 0 10px 0; font-size:12px; color:var(--text-dark);">Visibility Toggles:</h4>
+                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:12px;">
+                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                      <input type="checkbox" id="set-chk-label-show-store" checked> Show Store Name
+                    </label>
+                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                      <input type="checkbox" id="set-chk-label-show-name" checked> Show Product Name
+                    </label>
+                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                      <input type="checkbox" id="set-chk-label-show-barcode" checked> Show Barcode
+                    </label>
+                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                      <input type="checkbox" id="set-chk-label-show-human-readable" checked> Show Barcode Text
+                    </label>
+                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                      <input type="checkbox" id="set-chk-label-show-qr"> Show QR Code
+                    </label>
+                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                      <input type="checkbox" id="set-chk-label-show-sku" checked> Show SKU
+                    </label>
+                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                      <input type="checkbox" id="set-chk-label-show-price" checked> Show Price
+                    </label>
+                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                      <input type="checkbox" id="set-chk-label-show-attribs"> Show Size & Color
+                    </label>
+                  </div>
+                </div>
+
+                <button class="btn btn-primary" id="btn-save-settings" style="padding:14px; font-weight:700; margin-top:10px;" disabled>
+                  💾 Save All Configurations
+                </button>
+              </div>
+            </div>
+
           </div>
         `;
 
@@ -352,6 +439,36 @@
         document.getElementById('set-invoice-style').value = settings.invoice_style || 'theme-modern';
         document.getElementById('set-receipt-style').value = settings.receipt_style || 'style-1';
         
+        // Barcode Label settings mapping
+        document.getElementById('set-label-template').value = settings.label_template || 'standard';
+        document.getElementById('set-label-preset').value = settings.label_preset || '50x30';
+        document.getElementById('set-label-width').value = settings.label_width || '50';
+        document.getElementById('set-label-height').value = settings.label_height || '30';
+        document.getElementById('set-chk-label-show-store').checked = settings.label_show_store !== '0';
+        document.getElementById('set-chk-label-show-name').checked = settings.label_show_name !== '0';
+        document.getElementById('set-chk-label-show-barcode').checked = settings.label_show_barcode !== '0';
+        document.getElementById('set-chk-label-show-human-readable').checked = settings.label_show_human_readable !== '0';
+        document.getElementById('set-chk-label-show-qr').checked = settings.label_show_qr === '1';
+        document.getElementById('set-chk-label-show-sku').checked = settings.label_show_sku !== '0';
+        document.getElementById('set-chk-label-show-price').checked = settings.label_show_price !== '0';
+        document.getElementById('set-chk-label-show-attribs').checked = settings.label_show_attribs === '1';
+
+        // Preset dropdown toggle
+        const handlePresetChange = () => {
+          const val = document.getElementById('set-label-preset').value;
+          const customDims = document.getElementById('set-lbl-custom-dims');
+          if (val === 'custom') {
+            customDims.style.display = 'flex';
+          } else {
+            customDims.style.display = 'none';
+            const [w, h] = val.split('x');
+            document.getElementById('set-label-width').value = w;
+            document.getElementById('set-label-height').value = h;
+          }
+        };
+        document.getElementById('set-label-preset').onchange = handlePresetChange;
+        handlePresetChange();
+
         const saveBtn = document.getElementById('btn-save-settings');
         saveBtn.disabled = false;
 
@@ -362,6 +479,19 @@
           const default_print_type = document.getElementById('set-print-type').value;
           const invoice_style = document.getElementById('set-invoice-style').value;
           const receipt_style = document.getElementById('set-receipt-style').value;
+
+          const label_template = document.getElementById('set-label-template').value;
+          const label_preset = document.getElementById('set-label-preset').value;
+          const label_width = document.getElementById('set-label-width').value;
+          const label_height = document.getElementById('set-label-height').value;
+          const label_show_store = document.getElementById('set-chk-label-show-store').checked ? '1' : '0';
+          const label_show_name = document.getElementById('set-chk-label-show-name').checked ? '1' : '0';
+          const label_show_barcode = document.getElementById('set-chk-label-show-barcode').checked ? '1' : '0';
+          const label_show_human_readable = document.getElementById('set-chk-label-show-human-readable').checked ? '1' : '0';
+          const label_show_qr = document.getElementById('set-chk-label-show-qr').checked ? '1' : '0';
+          const label_show_sku = document.getElementById('set-chk-label-show-sku').checked ? '1' : '0';
+          const label_show_price = document.getElementById('set-chk-label-show-price').checked ? '1' : '0';
+          const label_show_attribs = document.getElementById('set-chk-label-show-attribs').checked ? '1' : '0';
 
           if (!store_name || !store_address || !store_phone) {
             H.showToast('Please fill out all settings fields.', 'error');
@@ -377,13 +507,25 @@
             store_phone, 
             invoice_style, 
             default_print_type, 
-            receipt_style 
+            receipt_style,
+            label_template,
+            label_preset,
+            label_width,
+            label_height,
+            label_show_store,
+            label_show_name,
+            label_show_barcode,
+            label_show_human_readable,
+            label_show_qr,
+            label_show_sku,
+            label_show_price,
+            label_show_attribs
           });
           saveBtn.disabled = false;
-          saveBtn.innerHTML = '💾 Save Settings';
+          saveBtn.innerHTML = '💾 Save All Configurations';
 
           if (res.success) {
-            H.showToast('Invoice settings saved successfully!');
+            H.showToast('All configurations saved successfully!');
           } else {
             H.showToast('Could not save settings: ' + res.error, 'error');
           }
