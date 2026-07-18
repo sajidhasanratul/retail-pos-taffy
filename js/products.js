@@ -349,6 +349,10 @@
                 <label class="form-label">Main Barcode</label>
                 <input type="text" class="form-input" id="p-barcode" value="${isEdit ? H.esc(p.barcode) : ''}">
               </div>
+              <div class="form-group">
+                <label class="form-label">Tag Name (Optional)</label>
+                <input type="text" class="form-input" id="p-tag" value="${isEdit ? H.esc(p.tag || '') : ''}" placeholder="e.g. summer, offer, promo">
+              </div>
             </div>
 
             <!-- Single Product Fields -->
@@ -540,6 +544,7 @@
         const categoryId = overlay.querySelector('#p-category').value;
         const sku = overlay.querySelector('#p-sku').value.trim();
         const barcode = overlay.querySelector('#p-barcode').value.trim();
+        const tag = overlay.querySelector('#p-tag').value.trim();
 
         if (!name || !sku) {
           H.showToast('Product Name and SKU are required fields', 'error');
@@ -552,6 +557,7 @@
           categoryId,
           sku,
           barcode,
+          tag: tag || null,
           image: activeImage,
           variations: currentVariations
         };
