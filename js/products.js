@@ -267,7 +267,11 @@
         const p = list.find(prod => prod.id === id);
 
         card.querySelector('.btn-edit-prod').onclick = () => this.showAddEditModal(p);
-        card.querySelector('.btn-label-prod').onclick = () => this.showLabelPrintModal(p);
+        card.querySelector('.btn-label-prod').onclick = () => {
+          POS.LabelPrinter.selectedProducts = [];
+          POS.LabelPrinter.addProduct(p, false);
+          POS.Router.navigate('/label-printer');
+        };
         card.querySelector('.btn-delete-prod').onclick = async () => {
           if (await H.confirm(`Are you sure you want to delete product "${p.name}"?`)) {
             await S.delete('products', p.id);
