@@ -310,26 +310,80 @@
         prodResults.classList.add('open');
       }, 200));
 
-      // Barcode simulation
-      document.getElementById('btn-scan').onclick = async () => {
-        // Randomly pick a barcode from existing products
-        const products = await S.getAll('products');
-        const barcodes = [];
-        products.forEach(p => {
-          if (p.variations && p.variations.length > 0) {
-            p.variations.forEach(v => barcodes.push(v.barcode));
-          } else {
-            barcodes.push(p.barcode);
+      // Barcode Enter keypress lookup & Scan Button setup
+      searchProd.onkeydown = async (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const query = searchProd.value.trim();
+          if (!query) return;
+
+          const products = await S.getAll('products');
+          let matchedItem = null;
+
+          for (const p of products) {
+            if (p.variations && p.variations.length > 0) {
+              const vMatch = p.variations.find(v => (v.barcode && v.barcode.toLowerCase() === query.toLowerCase()) || (v.sku && v.sku.toLowerCase() === query.toLowerCase()));
+              if (vMatch) {
+                matchedItem = {
+                  productId: p.id,
+                  productName: p.name,
+                  variationName: vMatch.name,
+                  unitPrice: parseFloat(vMatch.price),
+                  qty: 1,
+                  image: p.image,
+                  stock: parseInt(vMatch.stock)
+                };
+                break;
+              }
+            } else {
+              if ((p.barcode && p.barcode.toLowerCase() === query.toLowerCase()) || (p.sku && p.sku.toLowerCase() === query.toLowerCase())) {
+                matchedItem = {
+                  productId: p.id,
+                  productName: p.name,
+                  variationName: '',
+                  unitPrice: parseFloat(p.sellingPrice),
+                  qty: 1,
+                  image: p.image,
+                  stock: parseInt(p.stock)
+                };
+                break;
+              }
+            }
           }
-        });
-        if (barcodes.length === 0) {
-          H.showToast('No barcodes seeded in database', 'warning');
-          return;
+
+          if (matchedItem) {
+            // Cancel any debounced search logic
+            H.debounce(() => {}, 0)();
+            this.addToCart(matchedItem);
+            searchProd.value = '';
+            prodResults.classList.remove('open');
+            H.showToast(`Scanned: ${matchedItem.productName} ${matchedItem.variationName ? `(${matchedItem.variationName})` : ''}`, 'success');
+            this.playBeepSound();
+          } else {
+            // If not exact match, trigger normal filter search immediately
+            searchProd.dispatchEvent(new Event('input'));
+          }
         }
-        const randomBarcode = barcodes[Math.floor(Math.random() * barcodes.length)];
-        searchProd.value = randomBarcode;
-        // Trigger input event
-        searchProd.dispatchEvent(new Event('input'));
+      };
+
+      document.getElementById('btn-scan').onclick = () => {
+        searchProd.value = '';
+        searchProd.focus();
+        
+        searchProd.placeholder = "📷 Scanning... scan barcode now!";
+        searchProd.style.borderColor = "var(--primary-color, #3b82f6)";
+        searchProd.style.boxShadow = "0 0 0 3px rgba(59, 130, 246, 0.25)";
+        
+        H.showToast('Scanner ready. Scan the product barcode now.');
+
+        const resetStyle = () => {
+          searchProd.placeholder = "Type product name, SKU or scan barcode...";
+          searchProd.style.borderColor = "";
+          searchProd.style.boxShadow = "";
+        };
+
+        searchProd.onblur = resetStyle;
+        searchProd.oninput = resetStyle;
       };
 
       // ── Discount & Tax Changes ───────────────────────
@@ -841,6 +895,26 @@
     async printInvoice(order, cartItems) {
       const H = POS.Helpers;
       H.printOrder(order, cartItems);
+    },
+
+    playBeepSound() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
+
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.1);
+      } catch (err) {
+        console.warn('Web Audio API beep failed:', err);
+      }
     }
   };
 
