@@ -705,7 +705,8 @@
             <div class="layout-vertical" style="justify-content:space-between;">
               ${showStore}
               ${showName}
-              <div class="lbl-price-large" style="font-size: 18px; margin: 4px 0;">${H.formatCurrency(price)}</div>
+              ${attributes}
+              ${config.showPrice ? `<div class="lbl-price-large" style="font-size: 18px; margin: 4px 0;">${H.formatCurrency(price)}</div>` : ''}
               ${showSku}
             </div>
           `;
@@ -723,9 +724,11 @@
               <div>
                 ${barcode ? barcodeEl : ''}
               </div>
-              <div style="background:#000; color:#fff; font-weight:800; padding:2px; font-size:12px; margin-top:2px;">
-                PRICE: ${H.formatCurrency(price)}
-              </div>
+              ${config.showPrice ? `
+                <div style="background:#000; color:#fff; font-weight:800; padding:2px; font-size:12px; margin-top:2px;">
+                  PRICE: ${H.formatCurrency(price)}
+                </div>
+              ` : ''}
             </div>
           `;
 
@@ -737,10 +740,13 @@
                 ✦ ${H.esc(storeName).toUpperCase()} ✦
               </div>
               <div style="font-weight:700; font-size:10px; margin-top:4px;">${H.esc(name)}</div>
+              ${attributes}
               ${barcodeEl}
-              <div style="font-weight:800; font-size:14px; margin-top:2px;">
-                ${H.formatCurrency(price)}
-              </div>
+              ${config.showPrice ? `
+                <div style="font-weight:800; font-size:14px; margin-top:2px;">
+                  ${H.formatCurrency(price)}
+                </div>
+              ` : ''}
             </div>
           `;
 
@@ -752,11 +758,14 @@
                 <div style="flex:1;">
                   ${showStore}
                   ${showName}
+                  ${attributes}
                   ${showSku}
                 </div>
-                <div class="badge-price-yellow">
-                  ${H.formatCurrency(price)}
-                </div>
+                ${config.showPrice ? `
+                  <div class="badge-price-yellow">
+                    ${H.formatCurrency(price)}
+                  </div>
+                ` : ''}
               </div>
               <div style="width:100%; border-top:1px dashed #ccc; padding-top:2px;">
                 ${barcodeEl}
@@ -774,10 +783,13 @@
                 <span class="badge-sale">PROMO</span>
               </div>
               ${showName}
-              <div style="margin:2px 0; display:flex; align-items:center; justify-content:center;">
-                <span class="lbl-price-strike">${H.formatCurrency(originalPrice)}</span>
-                <span class="lbl-price-sale">${H.formatCurrency(price)}</span>
-              </div>
+              ${attributes}
+              ${config.showPrice ? `
+                <div style="margin:2px 0; display:flex; align-items:center; justify-content:center;">
+                  <span class="lbl-price-strike">${H.formatCurrency(originalPrice)}</span>
+                  <span class="lbl-price-sale">${H.formatCurrency(price)}</span>
+                </div>
+              ` : ''}
               ${barcodeEl}
             </div>
           `;
@@ -787,12 +799,13 @@
           return `
             <div class="layout-vertical" style="justify-content:space-between; align-items:center;">
               ${showName}
+              ${attributes}
               <div style="margin:4px 0;">
                 ${qrEl}
               </div>
               <div style="display:flex; justify-content:space-between; width:100%; font-size:8px;">
-                <span>${sku}</span>
-                <strong>${H.formatCurrency(price)}</strong>
+                <span>${showSku ? sku : ''}</span>
+                ${config.showPrice ? `<strong>${H.formatCurrency(price)}</strong>` : ''}
               </div>
             </div>
           `;
@@ -816,8 +829,9 @@
           return `
             <div style="display:flex; flex-direction:column; gap:2px; height:100%; justify-content:center; align-items:center;">
               <div style="font-size:8px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%;">${H.esc(name)}</div>
+              ${attributes ? `<div style="font-size:7px; color:#555; transform:scale(0.85);">${attributes}</div>` : ''}
               <div style="margin:-2px 0; width:100%; transform:scale(0.9);">${barcodeEl}</div>
-              <div style="font-size:9px; font-weight:800;">${H.formatCurrency(price)}</div>
+              ${config.showPrice ? `<div style="font-size:9px; font-weight:800;">${H.formatCurrency(price)}</div>` : ''}
             </div>
           `;
 
@@ -829,11 +843,12 @@
               <div>
                 ${showStore}
                 ${showName}
+                ${attributes}
               </div>
               ${barcodeEl}
               <div style="display:flex; justify-content:space-between; align-items:end; margin-top:2px;">
                 ${showSku}
-                <div class="lbl-price-large">${H.formatCurrency(price)}</div>
+                ${config.showPrice ? `<div class="lbl-price-large">${H.formatCurrency(price)}</div>` : ''}
               </div>
             </div>
           `;
