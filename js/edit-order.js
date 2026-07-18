@@ -320,35 +320,64 @@
         prodResults.classList.add('open');
       }, 200);
 
-      // Simulator Scan Button
-      document.getElementById('btn-scan').onclick = async () => {
-        const barcode = await H.prompt('Simulate barcode scan. Enter product barcode or SKU:');
-        if (!barcode) return;
+      // Barcode Enter keypress lookup & Scan Button setup
+      searchProd.onkeydown = async (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const query = searchProd.value.trim();
+          if (!query) return;
 
-        const prods = await S.getAll('products');
-        let matched = null;
+          const prods = await S.getAll('products');
+          let matched = null;
 
-        for (const p of prods) {
-          if (p.variations && p.variations.length > 0) {
-            const v = p.variations.find(varObj => varObj.barcode === barcode || varObj.sku === barcode);
-            if (v) {
-              matched = { product: p, variant: v, name: `${p.name} - ${v.name}`, sku: v.sku, barcode: v.barcode, price: v.price, stock: v.stock };
-              break;
-            }
-          } else {
-            if (p.barcode === barcode || p.sku === barcode) {
-              matched = { product: p, variant: null, name: p.name, sku: p.sku, barcode: p.barcode, price: p.sellingPrice, stock: p.stock };
-              break;
+          for (const p of prods) {
+            if (p.variations && p.variations.length > 0) {
+              const v = p.variations.find(varObj => (varObj.barcode && varObj.barcode.toLowerCase() === query.toLowerCase()) || (varObj.sku && varObj.sku.toLowerCase() === query.toLowerCase()));
+              if (v) {
+                matched = { product: p, variant: v, name: `${p.name} - ${v.name}`, sku: v.sku, barcode: v.barcode, price: v.price, stock: v.stock };
+                break;
+              }
+            } else {
+              if ((p.barcode && p.barcode.toLowerCase() === query.toLowerCase()) || (p.sku && p.sku.toLowerCase() === query.toLowerCase())) {
+                matched = { product: p, variant: null, name: p.name, sku: p.sku, barcode: p.barcode, price: p.sellingPrice, stock: p.stock };
+                break;
+              }
             }
           }
-        }
 
-        if (matched) {
-          this.addToCart(matched);
-          H.showToast(`Scanned product: ${matched.name}`);
-        } else {
-          H.showToast('No matching product barcode found.', 'error');
+          if (matched) {
+            H.debounce(() => {}, 0)();
+            this.addToCart(matched);
+            searchProd.value = '';
+            prodResults.innerHTML = '';
+            prodResults.classList.remove('open');
+            H.showToast(`Scanned: ${matched.name}`, 'success');
+            this.playBeepSound();
+          } else {
+            // If not exact match, trigger normal filter search immediately
+            searchProd.dispatchEvent(new Event('input'));
+          }
         }
+      };
+
+      document.getElementById('btn-scan').onclick = () => {
+        searchProd.value = '';
+        searchProd.focus();
+        
+        searchProd.placeholder = "📷 Scanning... scan barcode now!";
+        searchProd.style.borderColor = "var(--primary-color, #3b82f6)";
+        searchProd.style.boxShadow = "0 0 0 3px rgba(59, 130, 246, 0.25)";
+        
+        H.showToast('Scanner ready. Scan the product barcode now.');
+
+        const resetStyle = () => {
+          searchProd.placeholder = "Type product name, SKU or scan barcode...";
+          searchProd.style.borderColor = "";
+          searchProd.style.boxShadow = "";
+        };
+
+        searchProd.onblur = resetStyle;
+        searchProd.oninput = resetStyle;
       };
 
       // Discount & Tax recalculations
@@ -791,6 +820,26 @@
     async printInvoice(order, cartItems) {
       const H = POS.Helpers;
       H.printOrder(order, cartItems);
+    },
+
+    playBeepSound() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
+
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.1);
+      } catch (err) {
+        console.warn('Web Audio API beep failed:', err);
+      }
     }
   };
 
