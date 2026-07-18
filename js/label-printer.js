@@ -680,10 +680,10 @@
       // Render barcode, QR, or both stacked depending on checkboxes
       let barcodeOrQrEl = '';
       const barcodeHtml = config.showBarcode && barcode
-        ? `<div class="barcode-wrapper"><svg class="barcode-svg" data-value="${H.esc(barcode)}"></svg></div>`
+        ? `<div class="barcode-wrapper" style="height:${config.height < 30 ? 18 : 32}px; display:flex; justify-content:center; align-items:center; width:100%;"><svg class="barcode-svg" data-value="${H.esc(barcode)}" style="height:${config.height < 30 ? 16 : 28}px; width:100%; display:block;"></svg></div>`
         : '';
       const qrHtml = config.showQR && barcode
-        ? `<div class="qrcode-container" id="${uniqueId}-qr" data-text="${H.esc(barcode)}" style="margin: 0 auto; display:flex; justify-content:center;"></div>`
+        ? `<div class="qrcode-container" id="${uniqueId}-qr" data-text="${H.esc(barcode)}" style="width:${config.height < 30 ? 32 : 48}px; height:${config.height < 30 ? 32 : 48}px; margin:0 auto; display:flex; justify-content:center; align-items:center;"></div>`
         : '';
 
       if (barcodeHtml && qrHtml) {
