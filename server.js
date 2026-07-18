@@ -71,12 +71,17 @@ const initDB = async () => {
     image LONGTEXT
   )`);
 
-  // Auto-migration check: If database already exists but lacks the "image" column, add it.
+  // Auto-migration check: If database already exists but lacks the "image" or "tag" columns, add them.
   try {
     const columns = await dbQuery(`SHOW COLUMNS FROM products LIKE 'image'`);
     if (columns.length === 0) {
       await dbQuery(`ALTER TABLE products ADD COLUMN image LONGTEXT`);
       console.log('Database Migration: Added "image" column to products table.');
+    }
+    const tagColumns = await dbQuery(`SHOW COLUMNS FROM products LIKE 'tag'`);
+    if (tagColumns.length === 0) {
+      await dbQuery(`ALTER TABLE products ADD COLUMN tag VARCHAR(255) DEFAULT NULL`);
+      console.log('Database Migration: Added "tag" column to products table.');
     }
   } catch (migErr) {
     console.warn('Warning during database column migration check:', migErr.message);
@@ -829,10 +834,10 @@ app.get('/api/products', async (req, res) => {
 
 app.post('/api/products', verifyRole(['admin', 'manager']), async (req, res) => {
   try {
-    const { id, name, sku, barcode, categoryId, costPrice, sellingPrice, stock, alertQty, image, variations } = req.body;
-    await dbQuery(`INSERT INTO products (id, name, sku, barcode, categoryId, costPrice, sellingPrice, stock, alertQty, image) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, name, sku, barcode, categoryId, costPrice, sellingPrice, stock, alertQty, image]);
+    const { id, name, sku, barcode, categoryId, costPrice, sellingPrice, stock, alertQty, image, tag, variations } = req.body;
+    await dbQuery(`INSERT INTO products (id, name, sku, barcode, categoryId, costPrice, sellingPrice, stock, alertQty, image, tag) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, name, sku, barcode, categoryId, costPrice, sellingPrice, stock, alertQty, image, tag || null]);
 
     if (variations && variations.length > 0) {
       for (const v of variations) {
@@ -923,11 +928,11 @@ app.post('/api/products/bulk', verifyRole(['admin', 'manager']), async (req, res
 app.put('/api/products/:id', verifyRole(['admin', 'manager']), async (req, res) => {
   try {
     const pid = req.params.id;
-    const { name, sku, barcode, categoryId, costPrice, sellingPrice, stock, alertQty, image, variations } = req.body;
+    const { name, sku, barcode, categoryId, costPrice, sellingPrice, stock, alertQty, image, tag, variations } = req.body;
 
     await dbQuery(`UPDATE products SET name = ?, sku = ?, barcode = ?, categoryId = ?, costPrice = ?, 
-      sellingPrice = ?, stock = ?, alertQty = ?, image = ? WHERE id = ?`,
-      [name, sku, barcode, categoryId, costPrice, sellingPrice, stock, alertQty, image, pid]);
+      sellingPrice = ?, stock = ?, alertQty = ?, image = ?, tag = ? WHERE id = ?`,
+      [name, sku, barcode, categoryId, costPrice, sellingPrice, stock, alertQty, image, tag || null, pid]);
 
     await dbQuery(`DELETE FROM variations WHERE productId = ?`, [pid]);
     if (variations && variations.length > 0) {
