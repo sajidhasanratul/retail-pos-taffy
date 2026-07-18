@@ -669,7 +669,7 @@
       const storeName = this.settings.store_name || 'ZenPos Store';
 
       const showStore = config.showStore ? `<div class="lbl-store" style="font-size:${config.height < 30 ? '7px' : '9px'}">${H.esc(storeName)}</div>` : '';
-      const showName = config.showName ? `<div class="lbl-title" style="font-size:${config.height < 30 ? '9px' : '11px'}">${H.esc(name)}</div>` : '';
+            const showName = config.showName ? `<div class="lbl-title" style="font-size:${config.height < 30 ? '9px' : '11px'}">${H.esc(name)}</div>` : '';
       const showSku = config.showSKU ? `<div class="lbl-sku">SKU: ${H.esc(sku)}</div>` : '';
       
       let attributes = '';
@@ -677,15 +677,20 @@
         attributes = `<div class="lbl-attrs">${size ? `Sz: ${H.esc(size)}` : ''} ${color ? `Cl: ${H.esc(color)}` : ''}</div>`;
       }
 
-      // Barcode element placeholder
-      const barcodeEl = config.showBarcode && barcode
+      // Render barcode, QR, or both stacked depending on checkboxes
+      let barcodeOrQrEl = '';
+      const barcodeHtml = config.showBarcode && barcode
         ? `<div class="barcode-wrapper"><svg class="barcode-svg" data-value="${H.esc(barcode)}"></svg></div>`
         : '';
-
-      // QR Code element placeholder
-      const qrEl = config.showQR && barcode
+      const qrHtml = config.showQR && barcode
         ? `<div class="qrcode-container" id="${uniqueId}-qr" data-text="${H.esc(barcode)}" style="margin: 0 auto; display:flex; justify-content:center;"></div>`
         : '';
+
+      if (barcodeHtml && qrHtml) {
+        barcodeOrQrEl = `<div style="display:flex; flex-direction:column; gap:4px; align-items:center; width:100%;">${barcodeHtml}${qrHtml}</div>`;
+      } else {
+        barcodeOrQrEl = barcodeHtml || qrHtml;
+      }
 
       // Main layouts depending on template style
       switch (config.template) {
@@ -694,7 +699,7 @@
           // Maximized Barcode Sticker
           return `
             <div class="layout-vertical" style="justify-content:center; gap:2px;">
-              ${barcodeEl}
+              ${barcodeOrQrEl}
               ${showSku}
             </div>
           `;
@@ -720,9 +725,10 @@
                 <hr style="border:none; border-top:1px solid #000; margin:2px 0;">
                 ${showName}
                 ${attributes}
+                ${showSku}
               </div>
               <div>
-                ${barcode ? barcodeEl : ''}
+                ${barcodeOrQrEl}
               </div>
               ${config.showPrice ? `
                 <div style="background:#000; color:#fff; font-weight:800; padding:2px; font-size:12px; margin-top:2px;">
@@ -737,11 +743,12 @@
           return `
             <div class="layout-vertical" style="font-family:'Georgia', serif; justify-content:space-between;">
               <div style="font-size:8px; font-style:italic; border-bottom:1px double #000; padding-bottom:2px; letter-spacing:1px;">
-                ✦ ${H.esc(storeName).toUpperCase()} ✦
+                ✦ ${showStore ? H.esc(storeName).toUpperCase() : ''} ✦
               </div>
-              <div style="font-weight:700; font-size:10px; margin-top:4px;">${H.esc(name)}</div>
+              <div style="font-weight:700; font-size:10px; margin-top:4px;">${showName}</div>
               ${attributes}
-              ${barcodeEl}
+              ${showSku}
+              ${barcodeOrQrEl}
               ${config.showPrice ? `
                 <div style="font-weight:800; font-size:14px; margin-top:2px;">
                   ${H.formatCurrency(price)}
@@ -768,7 +775,7 @@
                 ` : ''}
               </div>
               <div style="width:100%; border-top:1px dashed #ccc; padding-top:2px;">
-                ${barcodeEl}
+                ${barcodeOrQrEl}
               </div>
             </div>
           `;
@@ -784,13 +791,14 @@
               </div>
               ${showName}
               ${attributes}
+              ${showSku}
               ${config.showPrice ? `
                 <div style="margin:2px 0; display:flex; align-items:center; justify-content:center;">
                   <span class="lbl-price-strike">${H.formatCurrency(originalPrice)}</span>
                   <span class="lbl-price-sale">${H.formatCurrency(price)}</span>
                 </div>
               ` : ''}
-              ${barcodeEl}
+              ${barcodeOrQrEl}
             </div>
           `;
 
@@ -798,10 +806,11 @@
           // QR Code focused sticker
           return `
             <div class="layout-vertical" style="justify-content:space-between; align-items:center;">
+              ${showStore}
               ${showName}
               ${attributes}
               <div style="margin:4px 0;">
-                ${qrEl}
+                ${barcodeOrQrEl}
               </div>
               <div style="display:flex; justify-content:space-between; width:100%; font-size:8px;">
                 <span>${showSku ? sku : ''}</span>
@@ -815,12 +824,12 @@
           return `
             <div class="layout-vertical" style="text-align:left; justify-content:space-between;">
               <div style="display:flex; justify-content:space-between; font-size:8px; font-weight:700;">
-                <span>WAREHOUSE STK</span>
+                <span>${showStore ? H.esc(storeName) : 'WAREHOUSE STK'}</span>
                 <span>LOC: WH-B1</span>
               </div>
-              <div style="font-weight:800; font-size:12px; border-bottom:1px solid #000; padding-bottom:1px;">SKU: ${sku}</div>
-              ${barcodeEl}
-              <div style="font-size:8px; color:#555;">Desc: ${H.esc(name)}</div>
+              ${config.showSKU ? `<div style="font-weight:800; font-size:12px; border-bottom:1px solid #000; padding-bottom:1px;">SKU: ${sku}</div>` : ''}
+              ${barcodeOrQrEl}
+              ${config.showName ? `<div style="font-size:8px; color:#555;">Desc: ${H.esc(name)}</div>` : ''}
             </div>
           `;
 
@@ -828,9 +837,10 @@
           // Very tight compact layout
           return `
             <div style="display:flex; flex-direction:column; gap:2px; height:100%; justify-content:center; align-items:center;">
-              <div style="font-size:8px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%;">${H.esc(name)}</div>
+              ${showStore ? `<div style="font-size:7px; font-weight:800; text-transform:uppercase;">${H.esc(storeName)}</div>` : ''}
+              <div style="font-size:8px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%;">${showName}</div>
               ${attributes ? `<div style="font-size:7px; color:#555; transform:scale(0.85);">${attributes}</div>` : ''}
-              <div style="margin:-2px 0; width:100%; transform:scale(0.9);">${barcodeEl}</div>
+              <div style="margin:-2px 0; width:100%; transform:scale(0.9);">${barcodeOrQrEl}</div>
               ${config.showPrice ? `<div style="font-size:9px; font-weight:800;">${H.formatCurrency(price)}</div>` : ''}
             </div>
           `;
@@ -845,7 +855,7 @@
                 ${showName}
                 ${attributes}
               </div>
-              ${barcodeEl}
+              ${barcodeOrQrEl}
               <div style="display:flex; justify-content:space-between; align-items:end; margin-top:2px;">
                 ${showSku}
                 ${config.showPrice ? `<div class="lbl-price-large">${H.formatCurrency(price)}</div>` : ''}
