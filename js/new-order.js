@@ -229,17 +229,18 @@
         const matches = [];
 
         products.forEach(p => {
-          // Check standard product sku / barcode / name
+          // Check standard product sku / barcode / name / tag
           const pNameMatch = p.name ? p.name.toLowerCase().includes(query) : false;
           const pSkuMatch = p.sku ? p.sku.toLowerCase().includes(query) : false;
           const pBarcodeMatch = p.barcode ? p.barcode.includes(query) : false;
+          const pTagMatch = p.tag ? p.tag.toLowerCase().includes(query) : false;
 
           if (p.variations && p.variations.length > 0) {
             p.variations.forEach(v => {
               const vNameMatch = v.name ? v.name.toLowerCase().includes(query) : false;
               const vSkuMatch = v.sku ? v.sku.toLowerCase().includes(query) : false;
               const vBarcodeMatch = v.barcode ? v.barcode.includes(query) : false;
-              if (pNameMatch || pSkuMatch || pBarcodeMatch || vNameMatch || vSkuMatch || vBarcodeMatch) {
+              if (pNameMatch || pSkuMatch || pBarcodeMatch || pTagMatch || vNameMatch || vSkuMatch || vBarcodeMatch) {
                 matches.push({
                   id: p.id,
                   name: p.name + ` (${v.name})`,
@@ -253,7 +254,7 @@
               }
             });
           } else {
-            if (pNameMatch || pSkuMatch || pBarcodeMatch) {
+            if (pNameMatch || pSkuMatch || pBarcodeMatch || pTagMatch) {
               matches.push({
                 id: p.id,
                 name: p.name,
