@@ -19,6 +19,22 @@
       const products = await S.getAll('products');
 
       mc.innerHTML = `
+        <style>
+          /* Live Preview Label styles */
+          .label-live-preview-box * { box-sizing: border-box; }
+          .label-live-preview-box .lbl-title { font-weight: 700; font-size: 10px; line-height: 1.2; word-break: break-word; overflow: hidden; max-height: 24px; text-transform: uppercase; }
+          .label-live-preview-box .lbl-store { font-weight: 800; font-size: 8px; color: #4a5568; letter-spacing: 0.5px; margin-bottom: 1px; text-transform: uppercase; }
+          .label-live-preview-box .lbl-price-large { font-weight: 800; font-size: 15px; color: #000; margin: 1px 0; }
+          .label-live-preview-box .lbl-price-strike { text-decoration: line-through; font-size: 9px; color: #718096; margin-right: 4px; }
+          .label-live-preview-box .lbl-price-sale { font-weight: 800; font-size: 14px; color: #e53e3e; }
+          .label-live-preview-box .lbl-sku { font-size: 8px; color: #2d3748; font-weight: 500; }
+          .label-live-preview-box .lbl-attrs { font-size: 8px; color: #4a5568; margin-top: 1px; }
+          .label-live-preview-box .barcode-wrapper { display: flex; justify-content: center; align-items: center; margin: 1px auto; width: 100%; height: auto; overflow: hidden; }
+          .label-live-preview-box .barcode-wrapper svg { max-width: 100%; height: auto; display: block; }
+          .label-live-preview-box .badge-sale { background: #000; color: #fff; font-size: 7px; font-weight: 800; padding: 1px 4px; border-radius: 2px; text-transform: uppercase; display: inline-block; }
+          .label-live-preview-box .badge-price-yellow { background: #000; color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: 800; font-size: 12px; }
+        </style>
+
         <div class="page-header fade-in">
           <div>
             <h2 class="page-title">🏷️ Barcode & Label Printer</h2>
