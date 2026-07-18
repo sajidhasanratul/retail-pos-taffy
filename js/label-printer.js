@@ -32,7 +32,7 @@
           .label-live-preview-box .barcode-wrapper { display: flex; justify-content: center; align-items: center; margin: 1px auto; width: 100%; height: auto; overflow: hidden; }
           .label-live-preview-box .barcode-wrapper svg { max-width: 100%; height: auto; display: block; }
           .label-live-preview-box .badge-sale { background: #000; color: #fff; font-size: 7px; font-weight: 800; padding: 1px 4px; border-radius: 2px; text-transform: uppercase; display: inline-block; }
-          .label-live-preview-box .badge-price-yellow { background: #000; color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: 800; font-size: 12px; }
+          .label-live-preview-box .badge-price-yellow { border: 1.5px solid #000; color: #000; padding: 2.5px 6px; border-radius: 4px; font-weight: 800; font-size: 13px; }
         </style>
 
         <div class="page-header fade-in">
@@ -586,8 +586,8 @@
             /* Specific Template Layouts Styles */
             .layout-vertical { display: flex; flex-direction: column; justify-content: space-between; height: 100%; }
             .layout-horizontal { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: center; height: 100%; }
-            .badge-sale { background: #000; color: #fff; font-size: 7px; font-weight: 800; padding: 1px 4px; border-radius: 2px; text-transform: uppercase; display: inline-block; }
-            .badge-price-yellow { background: #000; color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: 800; font-size: 12px; }
+            .badge-sale { background: #000; color: #fff; font-size: 7px; font-weight: 800; padding: 1px 4px; border-radius: 2px; text-transform: uppercase; display: inline-block; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .badge-price-yellow { border: 1.5px solid #000; color: #000; padding: 2.5px 6px; border-radius: 4px; font-weight: 800; font-size: 13px; }
           </style>
         </head>
         <body>
@@ -753,7 +753,7 @@
                 ${barcodeOrQrEl}
               </div>
               ${config.showPrice ? `
-                <div style="background:#000; color:#fff; font-weight:800; padding:2px; font-size:12px; margin-top:2px;">
+                <div style="border:1.5px solid #000; color:#000; font-weight:800; padding:2px; font-size:12px; margin-top:2px; text-align:center; border-radius:3px;">
                   PRICE: ${H.formatCurrency(price)}
                 </div>
               ` : ''}
