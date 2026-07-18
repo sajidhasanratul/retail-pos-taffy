@@ -417,6 +417,27 @@
 
       // Gather current configuration choices
       const config = this._getCurrentConfig();
+
+      // Check if libraries are loaded
+      if (config.showBarcode && typeof JsBarcode === 'undefined') {
+        canvas.innerHTML = `
+          <div style="background:#fee2e2; border:1px solid #fca5a5; color:#991b1b; padding:16px; border-radius:var(--radius-sm); text-align:center; width:100%; font-size:13px; font-weight:600; margin-top:20px;">
+            ⚠️ JsBarcode library is not loaded in the browser! <br>
+            Please ensure you have pushed index.html updates and refreshed the page using <strong>Ctrl+F5 (Hard Refresh)</strong> to bypass cache.
+          </div>
+        `;
+        return;
+      }
+      if (config.showQR && typeof QRCode === 'undefined') {
+        canvas.innerHTML = `
+          <div style="background:#fee2e2; border:1px solid #fca5a5; color:#991b1b; padding:16px; border-radius:var(--radius-sm); text-align:center; width:100%; font-size:13px; font-weight:600; margin-top:20px;">
+            ⚠️ QRCode library is not loaded in the browser! <br>
+            Please ensure you have pushed index.html updates and refreshed the page using <strong>Ctrl+F5 (Hard Refresh)</strong> to bypass cache.
+          </div>
+        `;
+        return;
+      }
+
       canvas.innerHTML = '';
 
       let labelIdx = 0;
@@ -468,6 +489,7 @@
                 });
               } catch (err) {
                 console.warn('JsBarcode error:', err.message);
+                svg.outerHTML = `<div style="font-size:7.5px; color:#ef4444; font-weight:600; line-height:1.1; padding:2px; text-transform:none;">⚠️ Barcode Error</div>`;
               }
             }
           }
