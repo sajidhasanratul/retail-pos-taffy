@@ -549,9 +549,10 @@
 
           stockHtml += `<div class="stock-box">`;
           varList.forEach((v, vIdx) => {
-            const isHidden = vIdx >= displayLimit ? 'style="display:none;" class="extra-var-stock"' : '';
+            const cls = vIdx >= displayLimit ? 'variant-item stock-green extra-var-stock' : 'variant-item stock-green';
+            const style = vIdx >= displayLimit ? 'style="display:none;"' : '';
             stockHtml += `
-              <div class="variant-item stock-green" ${isHidden}>
+              <div class="${cls}" ${style}>
                 <span class="variant-item-lbl">${H.esc(v.name)}</span>
                 <span class="variant-item-val">${v.stock}</span>
               </div>
@@ -584,9 +585,10 @@
 
           priceHtml += `<div class="price-box">`;
           varList.forEach((v, vIdx) => {
-            const isHidden = vIdx >= displayLimit ? 'style="display:none;" class="extra-var-price"' : '';
+            const cls = vIdx >= displayLimit ? 'variant-item extra-var-price' : 'variant-item';
+            const style = vIdx >= displayLimit ? 'style="display:none;"' : '';
             priceHtml += `
-              <div class="variant-item" ${isHidden}>
+              <div class="${cls}" ${style}>
                 <span class="variant-item-lbl">${H.esc(v.name)}</span>
                 <span class="variant-item-val">৳ ${v.price}</span>
               </div>
