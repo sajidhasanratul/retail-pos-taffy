@@ -2,17 +2,70 @@
   'use strict';
 
   const Products = {
+    currentTab: 'all',
+    perPage: 10,
+    currentPage: 1,
+    searchQuery: '',
+    categoryFilter: 'all',
+    selectedProductIds: [],
+
     async render() {
       const mc = document.getElementById('main-content');
       const S = POS.Store;
       const H = POS.Helpers;
 
-      let searchQuery = '';
-      let categoryFilter = 'all';
-
       const categories = await S.getAll('categories');
 
       mc.innerHTML = `
+        <style>
+          /* Redesigned Product Catalog styling */
+          .tab-container { display: flex; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid #edf2f7; padding-bottom: 10px; }
+          .tab-btn { background: none; border: none; padding: 8px 16px; font-size: 13px; font-weight: 600; color: #718096; cursor: pointer; display: flex; align-items: center; gap: 6px; border-radius: 20px; transition: all 0.2s; }
+          .tab-btn.active { background: #eff6ff; color: #2563eb; }
+          .tab-count { font-size: 11px; background: #e2e8f0; color: #475569; padding: 2px 8px; border-radius: 10px; font-weight: 700; }
+          .tab-btn.active .tab-count { background: #3b82f6; color: #fff; }
+          
+          .catalog-table { width: 100%; border-collapse: separate; border-spacing: 0 10px; margin-top: 10px; }
+          .catalog-table th { font-size: 11px; font-weight: 700; color: #4a5568; text-transform: uppercase; padding: 12px 16px; border-bottom: 1px solid #e2e8f0; text-align: left; letter-spacing: 0.5px; }
+          .catalog-table tr.table-row { background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.04); border-radius: 8px; transition: transform 0.2s, box-shadow 0.2s; }
+          .catalog-table tr.table-row:hover { transform: translateY(-1px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03); }
+          .catalog-table td { padding: 16px; font-size: 13px; vertical-align: middle; color: #2d3748; border-top: 1px solid #f7fafc; border-bottom: 1px solid #edf2f7; }
+          .catalog-table td:first-child { border-left: 1px solid #edf2f7; border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+          .catalog-table td:last-child { border-right: 1px solid #edf2f7; border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+          
+          .prod-meta-wrap { display: flex; flex-direction: column; gap: 4px; }
+          .prod-meta-name { font-weight: 700; font-size: 14px; color: #1a202c; text-decoration: none; display: block; }
+          .prod-meta-name:hover { color: #2563eb; }
+          .badge-status { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; width: fit-content; text-transform: uppercase; }
+          .badge-status.publish { background: #d1fae5; color: #065f46; }
+          .badge-status.draft { background: #f3f4f6; color: #374151; }
+          .badge-priority { font-size: 10px; color: #718096; display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; font-weight: 500; }
+          
+          .stock-box, .price-box { display: flex; flex-direction: column; gap: 6px; width: 100%; min-width: 180px; }
+          .variant-item { display: flex; justify-content: space-between; gap: 12px; background: #f8fafc; padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid #e2e8f0; font-size: 11px; }
+          .variant-item-lbl { color: #475569; font-weight: 500; }
+          .variant-item-val { font-weight: 700; color: #0f172a; }
+          .stock-green { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
+          .stock-green .variant-item-val { color: #047857; }
+          
+          .btn-more-variants { background: none; border: none; color: #2563eb; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 2px 4px; margin-top: 2px; }
+          
+          .actions-cell-wrap { position: relative; display: flex; justify-content: center; }
+          .action-btn-trigger { background: none; border: none; padding: 8px; border-radius: 50%; color: #718096; cursor: pointer; transition: background 0.2s; }
+          .action-btn-trigger:hover { background: #edf2f7; color: #2d3748; }
+          
+          .action-popup { position: absolute; right: 0; top: 100%; background: #fff; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); box-shadow: var(--shadow-md); z-index: 100; min-width: 150px; display: none; flex-direction: column; padding: 4px 0; }
+          .action-popup.open { display: flex; }
+          .action-popup-item { background: none; border: none; padding: 8px 16px; font-size: 12px; text-align: left; color: #4a5568; cursor: pointer; width: 100%; transition: background 0.2s; display: flex; align-items: center; gap: 8px; }
+          .action-popup-item:hover { background: #f7fafc; color: #2d3748; }
+          .action-popup-item.danger:hover { background: #fff5f5; color: #c53030; }
+
+          .scanner-guide-btn { display: inline-flex; align-items: center; gap: 6px; background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; height: 38px; }
+          .scanner-guide-btn:hover { background: #dbeafe; }
+          
+          .pagination-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding: 12px 16px; background: #fff; border-radius: 8px; border: 1px solid #edf2f7; }
+        </style>
+
         <div class="page-header fade-in">
           <div>
             <h2 class="page-title">📦 Product Catalog</h2>
@@ -29,20 +82,73 @@
           </div>
         </div>
 
-        <div class="filter-bar fade-in">
+        <div class="tab-container fade-in">
+          <button class="tab-btn active" id="tab-all" data-tab="all">
+            All Data <span class="tab-count" id="count-all">0</span>
+          </button>
+          <button class="tab-btn" id="tab-publish" data-tab="Publish">
+            Publish <span class="tab-count" id="count-publish">0</span>
+          </button>
+          <button class="tab-btn" id="tab-draft" data-tab="Draft">
+            Draft <span class="tab-count" id="count-draft">0</span>
+          </button>
+          <button class="tab-btn" id="tab-trash" data-tab="Trash" style="color: #ef4444;">
+            🗑️ Trash <span class="tab-count" id="count-trash" style="background:#fee2e2; color:#b91c1c;">0</span>
+          </button>
+        </div>
+
+        <div class="filter-bar fade-in" style="display:flex; justify-content:space-between; align-items:center; gap:16px;">
           <div class="search-box" style="flex:2;">
             <input type="text" id="prod-search" placeholder="Search by name, SKU, or barcode...">
           </div>
           <div class="form-group" style="margin-bottom:0; flex:1; min-width:180px;">
-            <label class="form-label">Category</label>
             <select class="form-select" id="prod-cat-filter">
               <option value="all">All Categories</option>
               ${categories.map(c => `<option value="${c.id}">${H.esc(c.name)}</option>`).join('')}
             </select>
           </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button class="scanner-guide-btn" id="btn-scanner-guide">💻 স্ক্যানার গাইড</button>
+            <select class="form-select" id="prod-per-page" style="width:120px; height:38px; font-size:12px; margin-bottom:0;">
+              <option value="10">10 Per Page</option>
+              <option value="20">20 Per Page</option>
+              <option value="50">50 Per Page</option>
+              <option value="100">100 Per Page</option>
+            </select>
+            <select class="form-select" id="prod-bulk-actions" style="width:140px; height:38px; font-size:12px; margin-bottom:0;">
+              <option value="">Bulk Actions</option>
+              <option value="publish">Publish Selected</option>
+              <option value="draft">Draft Selected</option>
+              <option value="delete">Trash Selected</option>
+              <option value="restore">Restore Selected</option>
+              <option value="delete_perm">Delete Permanently</option>
+            </select>
+          </div>
         </div>
 
-        <div class="product-grid fade-in" id="products-container"></div>
+        <div class="table-container fade-in" style="overflow-x:auto;">
+          <table class="catalog-table">
+            <thead>
+              <tr>
+                <th style="width:40px; text-align:center;"><input type="checkbox" id="chk-select-all"></th>
+                <th style="width:60px;">SL</th>
+                <th style="width:85px;">Image</th>
+                <th>Name</th>
+                <th>Category</th>
+                <th style="width:230px;">Stock</th>
+                <th style="width:230px;">Purchase Price</th>
+                <th style="width:100px; text-align:center;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="products-table-body">
+              <!-- Rendered via updateList -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination-bar fade-in" id="catalog-pagination">
+          <!-- Rendered via updateList -->
+        </div>
 
         <div class="modal-overlay" id="prod-modal-overlay"></div>
       `;
@@ -52,7 +158,10 @@
       document.getElementById('btn-manage-categories').onclick = () => this.showManageCategoriesModal();
 
       document.getElementById('btn-export-csv').onclick = async () => {
-        const list = await S.getAll('products');
+        const res = await fetch(`${window.location.origin}/api/products?includeTrashed=true`, {
+          headers: S.getHeaders()
+        });
+        const list = await res.json();
         const categoriesList = await S.getAll('categories');
         const csvData = [];
 
@@ -64,7 +173,6 @@
 
           if (p.variations && p.variations.length > 0) {
             p.variations.forEach(v => {
-              // Parse variation name back (e.g., "Size: M" -> name="Size", value="M")
               let varName = 'Size';
               let varValue = v.name;
               if (v.name.includes(':')) {
@@ -128,14 +236,12 @@
           try {
             let rows = [];
             if (isExcel) {
-              // Parse Excel using SheetJS
               const data = new Uint8Array(ev.target.result);
               const workbook = XLSX.read(data, { type: 'array' });
               const firstSheetName = workbook.SheetNames[0];
               const worksheet = workbook.Sheets[firstSheetName];
               rows = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
             } else {
-              // Parse CSV
               const csvText = ev.target.result;
               rows = H.parseCSV(csvText);
             }
@@ -145,18 +251,16 @@
               return;
             }
 
-            // Group products by main product SKU
             const productsMap = {};
 
             rows.forEach(r => {
               const skuRaw = (r['sku'] || r['SKU'] || '').toString().trim();
-              if (!skuRaw) return; // Skip rows without SKU
+              if (!skuRaw) return;
 
               const name = (r['name'] || r['Product Name'] || r['Product'] || '').toString().trim();
               const category = (r['category'] || r['Category Name'] || r['categoryName'] || '').toString().trim();
               const tags = (r['tags'] || r['Tags'] || r['tag'] || r['Tag'] || '').toString().trim();
               
-              // Selling price prioritizes salePrice, sale_price, Selling Price, price, sales_price
               const salePrice = parseFloat(r['salePrice'] || r['sale_price'] || r['regular_price'] || r['regularPrice'] || r['Selling Price'] || r['price'] || r['sales_price'] || 0);
               const costPrice = parseFloat(r['costPrice'] || r['cost_price'] || r['Cost Price'] || r['cost'] || 0);
               const quantity = parseInt(r['quantity'] || r['Quantity'] || r['stock'] || r['Stock'] || 0);
@@ -177,12 +281,10 @@
                 };
               }
 
-              // Variation details
               const varName = (r['variation_name'] || r['variationName'] || r['Variation Name'] || '').toString().trim();
               const varValue = (r['variation_value'] || r['variationValue'] || r['Variation Value'] || '').toString().trim();
 
               if (varName || varValue) {
-                // Force main product stock to 0 as it has variations
                 productsMap[skuRaw].stock = 0;
 
                 const varSkuRaw = (r['variation_sku'] || r['variationSku'] || r['Variation SKU'] || '').toString().trim();
@@ -242,134 +344,498 @@
       };
 
       document.getElementById('prod-search').oninput = H.debounce(async (e) => {
-        searchQuery = e.target.value.toLowerCase().trim();
-        await this.updateList(searchQuery, categoryFilter);
+        this.searchQuery = e.target.value.toLowerCase().trim();
+        this.currentPage = 1;
+        await this.updateList();
       }, 200);
 
       document.getElementById('prod-cat-filter').onchange = async (e) => {
-        categoryFilter = e.target.value;
-        await this.updateList(searchQuery, categoryFilter);
+        this.categoryFilter = e.target.value;
+        this.currentPage = 1;
+        await this.updateList();
       };
 
+      document.getElementById('prod-per-page').onchange = async (e) => {
+        this.perPage = parseInt(e.target.value) || 10;
+        this.currentPage = 1;
+        await this.updateList();
+      };
+
+      // Tab handlers
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.onclick = async () => {
+          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          this.currentTab = btn.dataset.tab;
+          this.currentPage = 1;
+          this.selectedProductIds = [];
+          document.getElementById('chk-select-all').checked = false;
+          await this.updateList();
+        };
+      });
+
+      // Scanner guide handler
+      document.getElementById('btn-scanner-guide').onclick = () => {
+        const overlay = document.getElementById('prod-modal-overlay');
+        overlay.innerHTML = `
+          <div class="modal animate" style="max-width:550px;">
+            <div class="modal-header">
+              <h3>📷 Barcode Scanner Guide (স্ক্যানার গাইড)</h3>
+              <button class="modal-close" id="modal-close-guide">&times;</button>
+            </div>
+            <div class="modal-body" style="font-size:13px; line-height:1.6; color:#475569; display:flex; flex-direction:column; gap:12px;">
+              <p>Your hardware barcode scanner acts as a fast keyboard. When scanning a barcode:</p>
+              <ul style="padding-left:20px;">
+                <li>It enters characters rapidly inside any focused input element.</li>
+                <li>It triggers an <strong>Enter</strong> keypress event to finish the input.</li>
+              </ul>
+              <div style="background:#eff6ff; border:1px solid #bfdbfe; padding:12px; border-radius:6px;">
+                <strong>⚡ Quick Checkout Scanner:</strong><br>
+                On the Billing / Sales view, click the <strong>📷 Scan</strong> button. The search bar will display a bright border. Scan any item's barcode; it automatically adds it to the cart!
+              </div>
+              <p>Make sure to print labels with <strong>Show Barcode</strong> toggled on so your scanner can read them correctly.</p>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary btn-sm" id="btn-guide-close">Close</button>
+            </div>
+          </div>
+        `;
+        overlay.classList.add('active');
+        overlay.querySelector('#modal-close-guide').onclick = () => overlay.classList.remove('active');
+        overlay.querySelector('#btn-guide-close').onclick = () => overlay.classList.remove('active');
+      };
+
+      // Bulk Actions handler
+      document.getElementById('prod-bulk-actions').onchange = async (e) => {
+        const action = e.target.value;
+        if (!action) return;
+
+        if (this.selectedProductIds.length === 0) {
+          H.showToast('No products selected!', 'error');
+          e.target.value = '';
+          return;
+        }
+
+        let confirmMsg = `Are you sure you want to run this bulk action on ${this.selectedProductIds.length} items?`;
+        if (action === 'delete_perm') {
+          confirmMsg = `⚠️ WARNING: This will permanently delete ${this.selectedProductIds.length} items. This cannot be undone!`;
+        }
+
+        if (await H.confirm(confirmMsg)) {
+          H.showToast('Processing bulk action...');
+          for (const pid of this.selectedProductIds) {
+            try {
+              if (action === 'publish' || action === 'draft') {
+                const pRes = await fetch(`${window.location.origin}/api/products?includeTrashed=true`, { headers: S.getHeaders() });
+                const list = await pRes.json();
+                const product = list.find(prod => prod.id === pid);
+                if (product) {
+                  product.status = action === 'publish' ? 'Publish' : 'Draft';
+                  await fetch(`${window.location.origin}/api/products/${pid}`, {
+                    method: 'PUT',
+                    headers: S.getHeaders(),
+                    body: JSON.stringify(product)
+                  });
+                }
+              } else if (action === 'delete') {
+                await fetch(`${window.location.origin}/api/products/${pid}`, { method: 'DELETE', headers: S.getHeaders() });
+              } else if (action === 'delete_perm') {
+                await fetch(`${window.location.origin}/api/products/${pid}?permanent=true`, { method: 'DELETE', headers: S.getHeaders() });
+              } else if (action === 'restore') {
+                await fetch(`${window.location.origin}/api/products/${pid}/restore`, { method: 'POST', headers: S.getHeaders() });
+              }
+            } catch (err) {
+              console.error('Bulk error:', err);
+            }
+          }
+          H.showToast('Bulk action completed.');
+          this.selectedProductIds = [];
+          document.getElementById('chk-select-all').checked = false;
+          await this.render();
+        }
+        e.target.value = '';
+      };
+
+      // Select All checkbox
+      document.getElementById('chk-select-all').onclick = (e) => {
+        const checkboxes = document.querySelectorAll('.chk-prod-item');
+        this.selectedProductIds = [];
+        checkboxes.forEach(chk => {
+          chk.checked = e.target.checked;
+          if (chk.checked) {
+            this.selectedProductIds.push(chk.dataset.id);
+          }
+        });
+      };
+
+      // Close popups when clicking anywhere else
+      document.addEventListener('click', (ev) => {
+        if (!ev.target.closest('.actions-cell-wrap')) {
+          document.querySelectorAll('.action-popup').forEach(pop => pop.classList.remove('open'));
+        }
+      });
+
       // Initial load
-      await this.updateList(searchQuery, categoryFilter);
+      await this.updateList();
     },
 
-    async updateList(search, category) {
+    async updateList() {
       const S = POS.Store;
       const H = POS.Helpers;
 
-      const list = await S.query('products', p => {
-        if (category !== 'all' && p.categoryId !== category) return false;
+      const res = await fetch(`${window.location.origin}/api/products?includeTrashed=true`, {
+        headers: S.getHeaders()
+      });
+      const allProducts = await res.json();
+      const categories = await S.getAll('categories');
 
-        if (search) {
-          const nameMatch = p.name.toLowerCase().includes(search);
-          const skuMatch = p.sku.toLowerCase().includes(search);
-          const barcodeMatch = p.barcode.includes(search);
+      // Calculate count metrics for tabs
+      const totalAll = allProducts.filter(p => p.deletedAt === null).length;
+      const totalPublish = allProducts.filter(p => p.deletedAt === null && p.status === 'Publish').length;
+      const totalDraft = allProducts.filter(p => p.deletedAt === null && p.status === 'Draft').length;
+      const totalTrash = allProducts.filter(p => p.deletedAt !== null).length;
+
+      document.getElementById('count-all').innerText = totalAll;
+      document.getElementById('count-publish').innerText = totalPublish;
+      document.getElementById('count-draft').innerText = totalDraft;
+      document.getElementById('count-trash').innerText = totalTrash;
+
+      let filtered = allProducts;
+      if (this.currentTab === 'all') {
+        filtered = allProducts.filter(p => p.deletedAt === null);
+      } else if (this.currentTab === 'Publish') {
+        filtered = allProducts.filter(p => p.deletedAt === null && p.status === 'Publish');
+      } else if (this.currentTab === 'Draft') {
+        filtered = allProducts.filter(p => p.deletedAt === null && p.status === 'Draft');
+      } else if (this.currentTab === 'Trash') {
+        filtered = allProducts.filter(p => p.deletedAt !== null);
+      }
+
+      if (this.categoryFilter !== 'all') {
+        filtered = filtered.filter(p => p.categoryId === this.categoryFilter);
+      }
+
+      if (this.searchQuery) {
+        filtered = filtered.filter(p => {
+          const nameMatch = p.name.toLowerCase().includes(this.searchQuery);
+          const skuMatch = p.sku.toLowerCase().includes(this.searchQuery);
+          const barcodeMatch = p.barcode ? p.barcode.includes(this.searchQuery) : false;
+          const tagMatch = p.tag ? p.tag.toLowerCase().includes(this.searchQuery) : false;
 
           let varMatch = false;
           if (p.variations && p.variations.length > 0) {
             varMatch = p.variations.some(v =>
-              v.name.toLowerCase().includes(search) ||
-              v.sku.toLowerCase().includes(search) ||
-              v.barcode.includes(search)
+              v.name.toLowerCase().includes(this.searchQuery) ||
+              v.sku.toLowerCase().includes(this.searchQuery)
             );
           }
+          return nameMatch || skuMatch || barcodeMatch || tagMatch || varMatch;
+        });
+      }
 
-          if (!nameMatch && !skuMatch && !barcodeMatch && !varMatch) return false;
-        }
+      const totalItems = filtered.length;
+      const totalPages = Math.ceil(totalItems / this.perPage) || 1;
 
-        return true;
-      });
+      if (this.currentPage > totalPages) this.currentPage = totalPages;
+      if (this.currentPage < 1) this.currentPage = 1;
 
-      const container = document.getElementById('products-container');
-      container.innerHTML = '';
+      const startIndex = (this.currentPage - 1) * this.perPage;
+      const pageItems = filtered.slice(startIndex, startIndex + this.perPage);
 
-      if (list.length === 0) {
-        container.innerHTML = `
-          <div style="grid-column: 1/-1;" class="card">
-            <div class="card-body text-center text-muted">
-              ⚠️ No products found matching query.
-            </div>
-          </div>
+      const tableBody = document.getElementById('products-table-body');
+      tableBody.innerHTML = '';
+
+      if (pageItems.length === 0) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="8" class="text-muted text-center" style="padding: 30px;">
+              ⚠️ No products found in this category or search selection.
+            </td>
+          </tr>
         `;
+        document.getElementById('catalog-pagination').innerHTML = '';
         return;
       }
 
-      const categories = await S.getAll('categories');
-
-      list.forEach(p => {
-        const isLowStock = p.stock <= (p.alertQty || 5);
-        const stockBadge = isLowStock
-          ? `<span class="badge badge-danger">Low Stock: ${p.stock}</span>`
-          : `<span class="badge badge-success">Stock: ${p.stock}</span>`;
-
-        let priceHtml = '';
-        if (p.variations && p.variations.length > 0) {
-          const prices = p.variations.map(v => v.price);
-          const min = Math.min(...prices);
-          const max = Math.max(...prices);
-          if (min === max) {
-            priceHtml = H.formatCurrency(min);
-          } else {
-            priceHtml = `${H.formatCurrency(min)} - ${H.formatCurrency(max)}`;
-          }
-        } else {
-          priceHtml = H.formatCurrency(p.sellingPrice);
-        }
-
+      pageItems.forEach((p, idx) => {
+        const serialNo = startIndex + idx + 1;
         const categoryObj = categories.find(c => c.id === p.categoryId);
         const categoryName = categoryObj ? categoryObj.name : 'Uncategorized';
 
-        let imageHtml = `<div class="product-card-img">📦</div>`;
+        const statusClass = p.status === 'Publish' ? 'publish' : 'draft';
+        const statusBadge = `<span class="badge-status ${statusClass}">${p.status || 'Publish'}</span>`;
+        const priorityBadge = p.priority > 0 ? `<span class="badge-priority">⭐ Priority: ${p.priority}</span>` : '';
+
+        let imgHtml = `<span style="font-size: 24px;">📦</span>`;
         if (p.image) {
-          imageHtml = `<div class="product-card-img" style="padding:0; background:none;"><img src="${p.image}" style="width:100%; height:100%; object-fit:cover; border-top-left-radius:calc(var(--radius) - 2px); border-top-right-radius:calc(var(--radius) - 2px);"></div>`;
+          imgHtml = `<img src="${p.image}" style="width: 45px; height: 45px; object-fit: cover; border-radius: 6px; border: 1px solid #edf2f7;">`;
         }
 
-        container.innerHTML += `
-          <div class="product-card fade-in" data-id="${p.id}">
-            ${imageHtml}
-            <div class="product-card-body">
-              <div class="product-card-name">${H.esc(p.name)}</div>
-              <div class="product-card-sku">SKU: ${H.esc(p.sku)} | ${H.esc(categoryName)}</div>
-              <div class="product-card-meta">
-                <div class="product-card-price">${priceHtml}</div>
-                <div class="product-card-stock">${stockBadge}</div>
+        let stockHtml = '';
+        if (p.variations && p.variations.length > 0) {
+          const varList = p.variations;
+          const displayLimit = 2;
+          const showMore = varList.length > displayLimit;
+
+          stockHtml += `<div class="stock-box">`;
+          varList.forEach((v, vIdx) => {
+            const isHidden = vIdx >= displayLimit ? 'style="display:none;" class="extra-var-stock"' : '';
+            stockHtml += `
+              <div class="variant-item stock-green" ${isHidden}>
+                <span class="variant-item-lbl">${H.esc(v.name)}</span>
+                <span class="variant-item-val">${v.stock}</span>
               </div>
-              ${p.variations && p.variations.length > 0 ? `
-                <div class="text-muted text-sm mt-1" style="font-style:italic;">
-                  Variations: ${p.variations.map(v => v.name).join(', ')}
-                </div>
-              ` : ''}
-              <div class="product-card-actions" style="display:flex; gap:4px; flex-wrap:wrap;">
-                <button class="btn btn-secondary btn-sm btn-edit-prod" style="flex:1; min-width:60px; padding:6px;">✏️ Edit</button>
-                <button class="btn btn-secondary btn-sm btn-label-prod" style="flex:1; min-width:60px; padding:6px; color:var(--primary);">🏷️ Label</button>
-                <button class="btn btn-secondary btn-sm btn-delete-prod" style="color:var(--danger); padding:6px;">🗑️</button>
-              </div>
+            `;
+          });
+          if (showMore) {
+            stockHtml += `
+              <button class="btn-more-variants btn-toggle-stock" data-expanded="false">
+                +${varList.length - displayLimit} more ▾
+              </button>
+            `;
+          }
+          stockHtml += `</div>`;
+        } else {
+          const isLowStock = p.stock <= (p.alertQty || 5);
+          const stockClass = isLowStock ? 'style="background:#fef2f2; border-color:#fecaca; color:#991b1b;"' : '';
+          stockHtml = `
+            <div class="variant-item" ${stockClass}>
+              <span class="variant-item-lbl">Standard</span>
+              <span class="variant-item-val">${p.stock}</span>
             </div>
-          </div>
+          `;
+        }
+
+        let priceHtml = '';
+        if (p.variations && p.variations.length > 0) {
+          const varList = p.variations;
+          const displayLimit = 2;
+          const showMore = varList.length > displayLimit;
+
+          priceHtml += `<div class="price-box">`;
+          varList.forEach((v, vIdx) => {
+            const isHidden = vIdx >= displayLimit ? 'style="display:none;" class="extra-var-price"' : '';
+            priceHtml += `
+              <div class="variant-item" ${isHidden}>
+                <span class="variant-item-lbl">${H.esc(v.name)}</span>
+                <span class="variant-item-val">৳ ${v.price}</span>
+              </div>
+            `;
+          });
+          if (showMore) {
+            priceHtml += `
+              <button class="btn-more-variants btn-toggle-price" data-expanded="false">
+                +${varList.length - displayLimit} more ▾
+              </button>
+            `;
+          }
+          priceHtml += `</div>`;
+        } else {
+          priceHtml = `
+            <div class="variant-item">
+              <span class="variant-item-lbl">Standard</span>
+              <span class="variant-item-val">৳ ${p.sellingPrice}</span>
+            </div>
+          `;
+        }
+
+        const isSelected = this.selectedProductIds.includes(p.id) ? 'checked' : '';
+        tableBody.innerHTML += `
+          <tr class="table-row">
+            <td style="text-align:center;"><input type="checkbox" class="chk-prod-item" data-id="${p.id}" ${isSelected}></td>
+            <td style="font-weight:700; color:#718096;">${serialNo}</td>
+            <td>${imgHtml}</td>
+            <td>
+              <div class="prod-meta-wrap">
+                <a href="javascript:void(0)" class="prod-meta-name" data-id="${p.id}">${H.esc(p.name)}</a>
+                <div style="display:flex; align-items:center;">
+                  ${statusBadge}
+                  ${priorityBadge}
+                </div>
+              </div>
+            </td>
+            <td style="font-weight:600; color:#4a5568;">${H.esc(categoryName)}</td>
+            <td>${stockHtml}</td>
+            <td>${priceHtml}</td>
+            <td>
+              <div class="actions-cell-wrap">
+                <button class="action-btn-trigger">⋮</button>
+                <div class="action-popup">
+                  ${p.deletedAt === null ? `
+                    <button class="action-popup-item btn-edit-opt" data-id="${p.id}">✏️ Edit Details</button>
+                    <button class="action-popup-item btn-label-opt" data-id="${p.id}">🏷️ Print Label</button>
+                    <button class="action-popup-item danger btn-delete-opt" data-id="${p.id}">🗑️ Move to Trash</button>
+                  ` : `
+                    <button class="action-popup-item btn-restore-opt" data-id="${p.id}">↩️ Restore Product</button>
+                    <button class="action-popup-item danger btn-delete-perm-opt" data-id="${p.id}">❌ Delete Permanently</button>
+                  `}
+                </div>
+              </div>
+            </td>
+          </tr>
         `;
       });
 
-      // Bind buttons
-      container.querySelectorAll('.product-card').forEach(card => {
-        const id = card.dataset.id;
-        const p = list.find(prod => prod.id === id);
+      // Bind triggers
+      document.querySelectorAll('.action-btn-trigger').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const popup = btn.nextElementSibling;
+          const open = popup.classList.contains('open');
+          document.querySelectorAll('.action-popup').forEach(pop => pop.classList.remove('open'));
+          if (!open) popup.classList.add('open');
+        };
+      });
 
-        card.querySelector('.btn-edit-prod').onclick = () => this.showAddEditModal(p);
-        card.querySelector('.btn-label-prod').onclick = () => {
+      document.querySelectorAll('.chk-prod-item').forEach(chk => {
+        chk.onclick = () => {
+          const pid = chk.dataset.id;
+          if (chk.checked) {
+            if (!this.selectedProductIds.includes(pid)) this.selectedProductIds.push(pid);
+          } else {
+            this.selectedProductIds = this.selectedProductIds.filter(id => id !== pid);
+          }
+        };
+      });
+
+      document.querySelectorAll('.prod-meta-name').forEach(link => {
+        link.onclick = () => {
+          const p = allProducts.find(prod => prod.id === link.dataset.id);
+          this.showAddEditModal(p);
+        };
+      });
+
+      document.querySelectorAll('.btn-edit-opt').forEach(btn => {
+        btn.onclick = () => {
+          const p = allProducts.find(prod => prod.id === btn.dataset.id);
+          this.showAddEditModal(p);
+        };
+      });
+
+      document.querySelectorAll('.btn-label-opt').forEach(btn => {
+        btn.onclick = () => {
+          const p = allProducts.find(prod => prod.id === btn.dataset.id);
           POS.LabelPrinter.selectedProducts = [];
           POS.LabelPrinter.addProduct(p, false);
           POS.Router.navigate('/label-printer');
         };
-        card.querySelector('.btn-delete-prod').onclick = async () => {
-          if (await H.confirm(`Are you sure you want to delete product "${p.name}"?`)) {
-            await S.delete('products', p.id);
-            H.showToast('Product deleted from inventory.');
-            await this.updateList(search, category);
+      });
+
+      document.querySelectorAll('.btn-delete-opt').forEach(btn => {
+        btn.onclick = async () => {
+          const p = allProducts.find(prod => prod.id === btn.dataset.id);
+          if (await H.confirm(`Are you sure you want to move "${p.name}" to Trash? It will stay in Trash for 30 days.`)) {
+            await fetch(`${window.location.origin}/api/products/${p.id}`, {
+              method: 'DELETE',
+              headers: S.getHeaders()
+            });
+            H.showToast(`"${p.name}" moved to Trash.`);
+            await this.render();
           }
         };
       });
+
+      document.querySelectorAll('.btn-restore-opt').forEach(btn => {
+        btn.onclick = async () => {
+          const p = allProducts.find(prod => prod.id === btn.dataset.id);
+          await fetch(`${window.location.origin}/api/products/${p.id}/restore`, {
+            method: 'POST',
+            headers: S.getHeaders()
+          });
+          H.showToast(`"${p.name}" restored to inventory.`);
+          await this.render();
+        };
+      });
+
+      document.querySelectorAll('.btn-delete-perm-opt').forEach(btn => {
+        btn.onclick = async () => {
+          const p = allProducts.find(prod => prod.id === btn.dataset.id);
+          if (await H.confirm(`⚠️ WARNING: Are you sure you want to permanently delete "${p.name}"? This action CANNOT be undone.`)) {
+            await fetch(`${window.location.origin}/api/products/${p.id}?permanent=true`, {
+              method: 'DELETE',
+              headers: S.getHeaders()
+            });
+            H.showToast(`"${p.name}" deleted permanently.`);
+            await this.render();
+          }
+        };
+      });
+
+      document.querySelectorAll('.btn-toggle-stock').forEach(btn => {
+        btn.onclick = () => {
+          const parent = btn.parentElement;
+          const extra = parent.querySelectorAll('.extra-var-stock');
+          const isExpanded = btn.dataset.expanded === 'true';
+
+          if (isExpanded) {
+            extra.forEach(el => el.style.display = 'none');
+            btn.innerHTML = `+${extra.length} more ▾`;
+            btn.dataset.expanded = 'false';
+          } else {
+            extra.forEach(el => el.style.display = 'flex');
+            btn.innerHTML = `Show less ▴`;
+            btn.dataset.expanded = 'true';
+          }
+        };
+      });
+
+      document.querySelectorAll('.btn-toggle-price').forEach(btn => {
+        btn.onclick = () => {
+          const parent = btn.parentElement;
+          const extra = parent.querySelectorAll('.extra-var-price');
+          const isExpanded = btn.dataset.expanded === 'true';
+
+          if (isExpanded) {
+            extra.forEach(el => el.style.display = 'none');
+            btn.innerHTML = `+${extra.length} more ▾`;
+            btn.dataset.expanded = 'false';
+          } else {
+            extra.forEach(el => el.style.display = 'flex');
+            btn.innerHTML = `Show less ▴`;
+            btn.dataset.expanded = 'true';
+          }
+        };
+      });
+
+      const pagination = document.getElementById('catalog-pagination');
+      if (totalPages > 1) {
+        let pagHtml = `
+          <div style="font-size:12px; color:#718096; font-weight:600;">
+            Showing ${startIndex + 1} - ${Math.min(startIndex + this.perPage, totalItems)} of ${totalItems} products
+          </div>
+          <div style="display:flex; gap:6px;">
+        `;
+        if (this.currentPage > 1) {
+          pagHtml += `<button class="btn btn-secondary btn-sm" id="btn-pag-prev" style="padding:4px 10px;">◀ Prev</button>`;
+        }
+        pagHtml += `<span style="font-size:13px; font-weight:700; color:#4a5568; align-self:center; margin:0 8px;">Page ${this.currentPage} of ${totalPages}</span>`;
+        if (this.currentPage < totalPages) {
+          pagHtml += `<button class="btn btn-secondary btn-sm" id="btn-pag-next" style="padding:4px 10px;">Next ▶</button>`;
+        }
+        pagHtml += `</div>`;
+        pagination.innerHTML = pagHtml;
+
+        const prevBtn = document.getElementById('btn-pag-prev');
+        if (prevBtn) {
+          prevBtn.onclick = async () => {
+            this.currentPage--;
+            await this.updateList();
+          };
+        }
+        const nextBtn = document.getElementById('btn-pag-next');
+        if (nextBtn) {
+          nextBtn.onclick = async () => {
+            this.currentPage++;
+            await this.updateList();
+          };
+        }
+      } else {
+        pagination.innerHTML = `
+          <div style="font-size:12px; color:#718096; font-weight:600;">
+            Showing all ${totalItems} products
+          </div>
+        `;
+      }
     },
 
     async showAddEditModal(p) {
@@ -381,7 +847,6 @@
       const title = isEdit ? 'Edit Product Details' : 'Add New Product';
       const categories = await S.getAll('categories');
 
-      // Internal copy of variations to manipulate
       let currentVariations = isEdit && p.variations ? JSON.parse(JSON.stringify(p.variations)) : [];
       let activeImage = isEdit && p.image ? p.image : '';
 
@@ -391,7 +856,7 @@
             <h3>${title}</h3>
             <button class="modal-close" id="modal-close-prod">&times;</button>
           </div>
-          <div class="modal-body">
+          <div class="modal-body" style="max-height: 480px; overflow-y: auto;">
             <div class="form-row">
               <div class="form-group" style="flex: 2;">
                 <label class="form-label">Product Name</label>
@@ -445,6 +910,20 @@
               </div>
             </div>
 
+            <div class="form-row">
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label">Publish Status</label>
+                <select class="form-select" id="p-status">
+                  <option value="Publish" ${isEdit && p.status === 'Publish' ? 'selected' : ''}>Publish</option>
+                  <option value="Draft" ${isEdit && p.status === 'Draft' ? 'selected' : ''}>Draft</option>
+                </select>
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label">Priority (Default: 0)</label>
+                <input type="number" class="form-input" id="p-priority" value="${isEdit ? parseInt(p.priority) || 0 : 0}" min="0">
+              </div>
+            </div>
+
             <!-- Single Product Fields -->
             <div id="single-product-fields" style="border: 1px solid var(--border); padding:16px; border-radius:var(--radius-sm); margin-bottom:16px; background:#F8FAFC;">
               <h4 style="margin-bottom:12px;">💲 Pricing & Inventory (No Variations)</h4>
@@ -470,9 +949,9 @@
 
             <!-- Variations Fields -->
             <div style="border: 1px solid var(--border); padding:16px; border-radius:var(--radius-sm); margin-bottom:16px;">
-              <div class="flex justify-between items-center" style="margin-bottom:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                 <h4>🎨 Product Variations (e.g. Size, Color)</h4>
-                <button class="btn btn-secondary btn-sm" id="btn-add-var-row">+ Add Variation</button>
+                <button class="btn btn-secondary btn-sm" id="btn-add-var-row" type="button">+ Add Variation</button>
               </div>
               <div id="variation-rows-container"></div>
             </div>
@@ -490,7 +969,6 @@
       overlay.querySelector('#modal-close-prod').onclick = close;
       overlay.querySelector('#btn-prod-cancel').onclick = close;
 
-      // Image inputs bindings
       const fileInput = overlay.querySelector('#p-file-input');
       const preview = overlay.querySelector('#p-img-preview');
       const urlInput = overlay.querySelector('#p-image-url');
@@ -520,280 +998,161 @@
       };
 
       overlay.querySelector('#btn-add-quick-category').onclick = async () => {
-        const name = prompt('Enter customized category name:');
-        if (!name || !name.trim()) return;
-
+        const name = await H.prompt('Enter new category name:');
+        if (!name) return;
         const newCat = {
           id: 'cat_' + Math.random().toString(36).substr(2, 9),
-          name: name.trim()
+          name
         };
-
         try {
           await S.add('categories', newCat);
-          const select = overlay.querySelector('#p-category');
-          const opt = document.createElement('option');
-          opt.value = newCat.id;
-          opt.textContent = newCat.name;
-          opt.selected = true;
-          select.appendChild(opt);
-          H.showToast('Customized category added successfully');
+          const sel = overlay.querySelector('#p-category');
+          sel.innerHTML += `<option value="${newCat.id}" selected>${H.esc(newCat.name)}</option>`;
+          H.showToast(`Category "${newCat.name}" created.`);
         } catch (err) {
-          H.showToast('Could not save category: ' + err.message, 'error');
+          H.showToast('Could not save category', 'error');
         }
       };
 
-      const container = overlay.querySelector('#variation-rows-container');
-      const singleFields = overlay.querySelector('#single-product-fields');
-
-      // Helper to render variation builders
-      const renderVariationRows = () => {
+      const renderVariations = () => {
+        const container = overlay.querySelector('#variation-rows-container');
         container.innerHTML = '';
         if (currentVariations.length === 0) {
-          container.innerHTML = `<p class="text-muted text-sm text-center">No variations configured. This product will behave as a standard single entity.</p>`;
-          singleFields.style.opacity = '1';
-          singleFields.querySelectorAll('input').forEach(i => i.disabled = false);
+          container.innerHTML = `<p class="text-muted text-sm text-center py-2">No variations defined.</p>`;
+          overlay.querySelector('#single-product-fields').style.display = 'block';
           return;
         }
 
-        // De-activate standard single pricing outputs to prevent conflicts
-        singleFields.style.opacity = '0.5';
-        singleFields.querySelectorAll('input').forEach(i => i.disabled = true);
+        overlay.querySelector('#single-product-fields').style.display = 'none';
 
-        currentVariations.forEach((v, idx) => {
+        currentVariations.forEach((v, index) => {
           container.innerHTML += `
-            <div class="variation-row mb-1" data-index="${idx}">
-              <div class="form-group">
-                <label class="form-label">Variant Name (e.g. M - Red)</label>
-                <input type="text" class="form-input var-name" value="${H.esc(v.name)}" placeholder="M - Red">
-              </div>
-              <div class="form-group">
-                <label class="form-label">SKU</label>
-                <input type="text" class="form-input var-sku" value="${H.esc(v.sku)}">
-              </div>
-              <div class="form-group">
-                <label class="form-label">Barcode</label>
-                <input type="text" class="form-input var-barcode" value="${H.esc(v.barcode)}">
-              </div>
-              <div class="form-group">
-                <label class="form-label">Cost</label>
-                <input type="number" class="form-input var-cost" value="${v.costPrice}">
-              </div>
-              <div class="form-group">
-                <label class="form-label">Price</label>
-                <input type="number" class="form-input var-price" value="${v.price}">
-              </div>
-              <div class="form-group">
-                <label class="form-label">Stock</label>
-                <input type="number" class="form-input var-stock" value="${v.stock}">
-              </div>
-              <button class="btn btn-danger btn-sm btn-remove-var-row" style="margin-bottom:2px; height: 38px;">🗑️</button>
+            <div class="var-row" data-id="${v.id || ''}" style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+              <input type="text" class="form-input var-name-input" placeholder="Name (e.g. Size: M)" value="${H.esc(v.name)}" style="flex:2;">
+              <input type="text" class="form-input var-sku-input" placeholder="SKU" value="${H.esc(v.sku)}" style="flex:2;">
+              <input type="number" class="form-input var-cost-input" placeholder="Cost" value="${v.costPrice}" style="flex:1;">
+              <input type="number" class="form-input var-price-input" placeholder="Price" value="${v.price}" style="flex:1;">
+              <input type="number" class="form-input var-stock-input" placeholder="Stock" value="${v.stock}" style="flex:1;">
+              <button type="button" class="btn btn-secondary btn-sm btn-remove-var" data-index="${index}" style="color:var(--danger); padding:0 8px; height:38px;">&times;</button>
             </div>
           `;
         });
 
-        // Event hooks
-        container.querySelectorAll('.variation-row').forEach(row => {
-          const idx = parseInt(row.dataset.index);
-
-          row.querySelector('.var-name').oninput = (e) => { currentVariations[idx].name = e.target.value; };
-          row.querySelector('.var-sku').oninput = (e) => { currentVariations[idx].sku = e.target.value; };
-          row.querySelector('.var-barcode').oninput = (e) => { currentVariations[idx].barcode = e.target.value; };
-          row.querySelector('.var-cost').oninput = (e) => { currentVariations[idx].costPrice = parseFloat(e.target.value) || 0; };
-          row.querySelector('.var-price').oninput = (e) => { currentVariations[idx].price = parseFloat(e.target.value) || 0; };
-          row.querySelector('.var-stock').oninput = (e) => { currentVariations[idx].stock = parseInt(e.target.value) || 0; };
-
-          row.querySelector('.btn-remove-var-row').onclick = () => {
+        container.querySelectorAll('.btn-remove-var').forEach(btn => {
+          btn.onclick = () => {
+            const idx = parseInt(btn.dataset.index);
+            saveCurrentVariationInputs();
             currentVariations.splice(idx, 1);
-            renderVariationRows();
+            renderVariations();
           };
         });
       };
 
-      // Set up click events
+      const saveCurrentVariationInputs = () => {
+        const rows = overlay.querySelectorAll('.var-row');
+        rows.forEach((row, index) => {
+          if (currentVariations[index]) {
+            currentVariations[index].name = row.querySelector('.var-name-input').value.trim();
+            currentVariations[index].sku = row.querySelector('.var-sku-input').value.trim();
+            currentVariations[index].costPrice = parseFloat(row.querySelector('.var-cost-input').value) || 0;
+            currentVariations[index].price = parseFloat(row.querySelector('.var-price-input').value) || 0;
+            currentVariations[index].stock = parseInt(row.querySelector('.var-stock-input').value) || 0;
+          }
+        });
+      };
+
       overlay.querySelector('#btn-add-var-row').onclick = () => {
-        const baseSKU = overlay.querySelector('#p-sku').value || 'SKU';
-        const num = currentVariations.length + 1;
+        saveCurrentVariationInputs();
         currentVariations.push({
-          id: 'v_' + Math.random().toString(36).substr(2, 9),
+          id: 'var_' + Math.random().toString(36).substr(2, 9),
           name: '',
-          sku: `${baseSKU}-${num}`,
-          barcode: '',
+          sku: '',
           costPrice: parseFloat(overlay.querySelector('#p-cost').value) || 0,
           price: parseFloat(overlay.querySelector('#p-price').value) || 0,
           stock: 0
         });
-        renderVariationRows();
+        renderVariations();
       };
 
-      // Initial run
-      renderVariationRows();
-
-      // Save
       overlay.querySelector('#btn-prod-save').onclick = async () => {
         const name = overlay.querySelector('#p-name').value.trim();
         const categoryId = overlay.querySelector('#p-category').value;
         const sku = overlay.querySelector('#p-sku').value.trim();
-        const barcode = overlay.querySelector('#p-barcode').value.trim();
-        const tag = overlay.querySelector('#p-tag').value.trim();
+        const barcode = overlay.querySelector('#p-barcode').value.trim() || null;
+        const tag = overlay.querySelector('#p-tag').value.trim() || null;
+        const status = overlay.querySelector('#p-status').value;
+        const priority = parseInt(overlay.querySelector('#p-priority').value) || 0;
+
+        const costPrice = parseFloat(overlay.querySelector('#p-cost').value) || 0;
+        const sellingPrice = parseFloat(overlay.querySelector('#p-price').value) || 0;
+        const stock = parseInt(overlay.querySelector('#p-stock').value) || 0;
+        const alertQty = parseInt(overlay.querySelector('#p-alert').value) || 5;
 
         if (!name || !sku) {
-          H.showToast('Product Name and SKU are required fields', 'error');
+          H.showToast('Product Name and SKU Code are required!', 'error');
           return;
         }
 
-        // Prepare data package
-        const data = {
+        saveCurrentVariationInputs();
+        const varRows = overlay.querySelectorAll('.var-row');
+        const variations = [];
+        varRows.forEach(row => {
+          const vId = row.dataset.id || ('var_' + Math.random().toString(36).substr(2, 9));
+          const vName = row.querySelector('.var-name-input').value.trim();
+          const vSku = row.querySelector('.var-sku-input').value.trim();
+          const vCost = parseFloat(row.querySelector('.var-cost-input').value) || 0;
+          const vPrice = parseFloat(row.querySelector('.var-price-input').value) || 0;
+          const vStock = parseInt(row.querySelector('.var-stock-input').value) || 0;
+          if (vName && vSku) {
+            variations.push({ id: vId, name: vName, sku: vSku, costPrice: vCost, price: vPrice, stock: vStock });
+          }
+        });
+
+        const productData = {
+          id: isEdit ? p.id : ('prod_' + Math.random().toString(36).substr(2, 9)),
           name,
-          categoryId,
           sku,
           barcode,
-          tag: tag || null,
+          categoryId,
+          costPrice,
+          sellingPrice,
+          stock: variations.length > 0 ? variations.reduce((sum, v) => sum + v.stock, 0) : stock,
+          alertQty,
           image: activeImage,
-          variations: currentVariations
+          tag,
+          status,
+          priority,
+          variations
         };
 
-        if (currentVariations.length > 0) {
-          // Verify variations are valid
-          const invalid = currentVariations.some(v => !v.name);
-          if (invalid) {
-            H.showToast('Please specify names for all variations', 'error');
-            return;
+        try {
+          const method = isEdit ? 'PUT' : 'POST';
+          const url = isEdit ? `${window.location.origin}/api/products/${p.id}` : `${window.location.origin}/api/products`;
+          const res = await fetch(url, {
+            method,
+            headers: S.getHeaders(),
+            body: JSON.stringify(productData)
+          });
+          if (res.ok) {
+            H.showToast(isEdit ? 'Product updated successfully!' : 'Product added successfully!');
+            close();
+            await this.render();
+          } else {
+            const err = await res.json();
+            H.showToast(err.error || 'Failed to save product', 'error');
           }
-
-          // Aggregated values
-          data.costPrice = 0;
-          data.sellingPrice = 0;
-          data.stock = currentVariations.reduce((s, v) => s + v.stock, 0);
-          data.alertQty = parseInt(overlay.querySelector('#p-alert').value) || 5;
-        } else {
-          // Standard single product
-          data.costPrice = parseFloat(overlay.querySelector('#p-cost').value) || 0;
-          data.sellingPrice = parseFloat(overlay.querySelector('#p-price').value) || 0;
-          data.stock = parseInt(overlay.querySelector('#p-stock').value) || 0;
-          data.alertQty = parseInt(overlay.querySelector('#p-alert').value) || 5;
+        } catch (err) {
+          H.showToast('Save Error: ' + err.message, 'error');
         }
-
-        if (isEdit) {
-          await S.update('products', p.id, data);
-          H.showToast('Product profile updated.');
-        } else {
-          await S.add('products', data);
-          H.showToast('New product added to catalog.');
-        }
-
-        close();
-        await this.render();
-      };
-    },
-
-    showLabelPrintModal(p) {
-      const H = POS.Helpers;
-      let overlay = document.getElementById('prod-modal-overlay');
-      if (!overlay) return;
-
-      overlay.innerHTML = `
-        <div class="modal animate" style="max-width:450px;">
-          <div class="modal-header">
-            <h3>🏷️ Print Product Label</h3>
-            <button class="modal-close" id="modal-close-label-print">&times;</button>
-          </div>
-          <div class="modal-body">
-            <p style="margin-bottom:12px; font-size:13px; color:#64748b">Configure barcode label details below for printing on 50mm x 30mm rolls.</p>
-            
-            ${p.variations && p.variations.length > 0 ? `
-              <div class="form-group mb-2">
-                <label class="form-label">Select Variation</label>
-                <select class="form-select" id="lbl-variation">
-                  <option value="main" data-sku="${H.esc(p.sku)}" data-barcode="${H.esc(p.barcode || p.sku)}" data-price="${p.sellingPrice}">Main Product (${H.esc(p.sku)})</option>
-                  ${p.variations.map(v => `<option value="${v.id}" data-sku="${H.esc(v.sku || p.sku)}" data-barcode="${H.esc(v.barcode || v.sku || p.sku)}" data-price="${v.price}">${H.esc(v.name)} (${H.esc(v.sku)})</option>`).join('')}
-                </select>
-              </div>
-            ` : `
-              <input type="hidden" id="lbl-variation" value="main" data-sku="${H.esc(p.sku)}" data-barcode="${H.esc(p.barcode || p.sku)}" data-price="${p.sellingPrice}">
-            `}
-            
-            <div class="form-group mb-2">
-              <label class="form-label">Quantity to Print</label>
-              <input type="number" class="form-input" id="lbl-qty" value="1" min="1" max="100">
-            </div>
-            
-            <div style="border:1px solid var(--border); padding:16px; border-radius:var(--radius-sm); margin-top:16px; background:#f8fafc; display:flex; justify-content:center;">
-              <div id="label-live-preview" class="product-label" style="background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.05);"></div>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-secondary" id="btn-label-cancel">Cancel</button>
-            <button class="btn btn-primary" id="btn-label-print-confirm">🖨️ Print Labels</button>
-          </div>
-        </div>
-      `;
-
-      overlay.classList.add('active');
-
-      const close = () => overlay.classList.remove('active');
-      overlay.querySelector('#modal-close-label-print').onclick = close;
-      overlay.querySelector('#btn-label-cancel').onclick = close;
-
-      const select = overlay.querySelector('#lbl-variation');
-      const qtyInput = overlay.querySelector('#lbl-qty');
-
-      const updatePreview = () => {
-        const opt = select.tagName === 'SELECT' 
-          ? select.options[select.selectedIndex] 
-          : select;
-        
-        const sku = opt.dataset.sku;
-        const barcode = opt.dataset.barcode || sku;
-        const price = parseFloat(opt.dataset.price);
-
-        // Sanitize code for barcode39 rendering (uppercase, only supported characters)
-        const cleanBarcode = barcode.toUpperCase().replace(/[^A-Z0-9\-\.\s\$\/\+\%]/g, '');
-        const barcodeText = `*${cleanBarcode}*`;
-
-        overlay.querySelector('#label-live-preview').innerHTML = `
-          <div class="label-title">${H.esc(p.name)}</div>
-          <div class="label-barcode">${H.esc(barcodeText)}</div>
-          <div class="label-sku">SKU: ${H.esc(sku)}</div>
-          <div class="label-price">${H.formatCurrency(price)}</div>
-        `;
       };
 
-      if (select.tagName === 'SELECT') {
-        select.onchange = updatePreview;
-      }
-      updatePreview();
-
-      overlay.querySelector('#btn-label-print-confirm').onclick = () => {
-        const qty = parseInt(qtyInput.value) || 1;
-        const opt = select.tagName === 'SELECT' ? select.options[select.selectedIndex] : select;
-        const sku = opt.dataset.sku;
-        const barcode = opt.dataset.barcode || sku;
-        const price = parseFloat(opt.dataset.price);
-        const cleanBarcode = barcode.toUpperCase().replace(/[^A-Z0-9\-\.\s\$\/\+\%]/g, '');
-        const barcodeText = `*${cleanBarcode}*`;
-
-        let printContent = '<div style="display:flex; flex-direction:column; gap:8mm; align-items:center; justify-content:center; padding:10px;">';
-        for (let i = 0; i < qty; i++) {
-          printContent += `
-            <div class="product-label" style="page-break-after:always;">
-              <div class="label-title">${H.esc(p.name)}</div>
-              <div class="label-barcode">${H.esc(barcodeText)}</div>
-              <div class="label-sku">SKU: ${H.esc(sku)}</div>
-              <div class="label-price">${H.formatCurrency(price)}</div>
-            </div>
-          `;
-        }
-        printContent += '</div>';
-        H.printHTML(printContent, `Labels ${p.name}`);
-        close();
-      };
+      renderVariations();
     },
 
     async showManageCategoriesModal() {
       const S = POS.Store;
       const H = POS.Helpers;
       const overlay = document.getElementById('prod-modal-overlay');
-      if (!overlay) return;
 
       const renderCats = async () => {
         const categories = await S.getAll('categories');
@@ -815,7 +1174,6 @@
           `;
         });
 
-        // Bind delete events
         listContainer.querySelectorAll('.btn-delete-cat').forEach(btn => {
           btn.onclick = async () => {
             const id = btn.dataset.id;
