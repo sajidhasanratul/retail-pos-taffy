@@ -108,7 +108,6 @@
             </select>
           </div>
           <div style="display:flex; gap:8px; align-items:center;">
-            <button class="scanner-guide-btn" id="btn-scanner-guide">💻 স্ক্যানার গাইড</button>
             <select class="form-select" id="prod-per-page" style="width:120px; height:38px; font-size:12px; margin-bottom:0;">
               <option value="10">10 Per Page</option>
               <option value="20">20 Per Page</option>
@@ -374,36 +373,7 @@
         };
       });
 
-      // Scanner guide handler
-      document.getElementById('btn-scanner-guide').onclick = () => {
-        const overlay = document.getElementById('prod-modal-overlay');
-        overlay.innerHTML = `
-          <div class="modal animate" style="max-width:550px;">
-            <div class="modal-header">
-              <h3>📷 Barcode Scanner Guide (স্ক্যানার গাইড)</h3>
-              <button class="modal-close" id="modal-close-guide">&times;</button>
-            </div>
-            <div class="modal-body" style="font-size:13px; line-height:1.6; color:#475569; display:flex; flex-direction:column; gap:12px;">
-              <p>Your hardware barcode scanner acts as a fast keyboard. When scanning a barcode:</p>
-              <ul style="padding-left:20px;">
-                <li>It enters characters rapidly inside any focused input element.</li>
-                <li>It triggers an <strong>Enter</strong> keypress event to finish the input.</li>
-              </ul>
-              <div style="background:#eff6ff; border:1px solid #bfdbfe; padding:12px; border-radius:6px;">
-                <strong>⚡ Quick Checkout Scanner:</strong><br>
-                On the Billing / Sales view, click the <strong>📷 Scan</strong> button. The search bar will display a bright border. Scan any item's barcode; it automatically adds it to the cart!
-              </div>
-              <p>Make sure to print labels with <strong>Show Barcode</strong> toggled on so your scanner can read them correctly.</p>
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-secondary btn-sm" id="btn-guide-close">Close</button>
-            </div>
-          </div>
-        `;
-        overlay.classList.add('active');
-        overlay.querySelector('#modal-close-guide').onclick = () => overlay.classList.remove('active');
-        overlay.querySelector('#btn-guide-close').onclick = () => overlay.classList.remove('active');
-      };
+
 
       // Bulk Actions handler
       document.getElementById('prod-bulk-actions').onchange = async (e) => {
@@ -490,10 +460,10 @@
       const categories = await S.getAll('categories');
 
       // Calculate count metrics for tabs
-      const totalAll = allProducts.filter(p => p.deletedAt === null).length;
-      const totalPublish = allProducts.filter(p => p.deletedAt === null && p.status === 'Publish').length;
-      const totalDraft = allProducts.filter(p => p.deletedAt === null && p.status === 'Draft').length;
-      const totalTrash = allProducts.filter(p => p.deletedAt !== null).length;
+      const totalAll = allProducts.filter(p => !p.deletedAt || p.deletedAt === '0000-00-00 00:00:00').length;
+      const totalPublish = allProducts.filter(p => (!p.deletedAt || p.deletedAt === '0000-00-00 00:00:00') && p.status === 'Publish').length;
+      const totalDraft = allProducts.filter(p => (!p.deletedAt || p.deletedAt === '0000-00-00 00:00:00') && p.status === 'Draft').length;
+      const totalTrash = allProducts.filter(p => p.deletedAt && p.deletedAt !== '0000-00-00 00:00:00').length;
 
       document.getElementById('count-all').innerText = totalAll;
       document.getElementById('count-publish').innerText = totalPublish;
@@ -502,13 +472,13 @@
 
       let filtered = allProducts;
       if (this.currentTab === 'all') {
-        filtered = allProducts.filter(p => p.deletedAt === null);
+        filtered = allProducts.filter(p => !p.deletedAt || p.deletedAt === '0000-00-00 00:00:00');
       } else if (this.currentTab === 'Publish') {
-        filtered = allProducts.filter(p => p.deletedAt === null && p.status === 'Publish');
+        filtered = allProducts.filter(p => (!p.deletedAt || p.deletedAt === '0000-00-00 00:00:00') && p.status === 'Publish');
       } else if (this.currentTab === 'Draft') {
-        filtered = allProducts.filter(p => p.deletedAt === null && p.status === 'Draft');
+        filtered = allProducts.filter(p => (!p.deletedAt || p.deletedAt === '0000-00-00 00:00:00') && p.status === 'Draft');
       } else if (this.currentTab === 'Trash') {
-        filtered = allProducts.filter(p => p.deletedAt !== null);
+        filtered = allProducts.filter(p => p.deletedAt && p.deletedAt !== '0000-00-00 00:00:00');
       }
 
       if (this.categoryFilter !== 'all') {
@@ -661,7 +631,7 @@
               <div class="actions-cell-wrap">
                 <button class="action-btn-trigger">⋮</button>
                 <div class="action-popup">
-                  ${p.deletedAt === null ? `
+                  ${(!p.deletedAt || p.deletedAt === '0000-00-00 00:00:00') ? `
                     <button class="action-popup-item btn-edit-opt" data-id="${p.id}">✏️ Edit Details</button>
                     <button class="action-popup-item btn-label-opt" data-id="${p.id}">🏷️ Print Label</button>
                     <button class="action-popup-item danger btn-delete-opt" data-id="${p.id}">🗑️ Move to Trash</button>

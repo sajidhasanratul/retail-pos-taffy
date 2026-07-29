@@ -229,6 +229,8 @@
         const matches = [];
 
         products.forEach(p => {
+          if (p.deletedAt && p.deletedAt !== '0000-00-00 00:00:00') return;
+
           // Check standard product sku / barcode / name / tag
           const pNameMatch = p.name ? p.name.toLowerCase().includes(query) : false;
           const pSkuMatch = p.sku ? p.sku.toLowerCase().includes(query) : false;

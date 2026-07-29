@@ -854,16 +854,16 @@ app.get('/api/products', async (req, res) => {
     const queryParams = [];
 
     if (!includeTrashed) {
-      queryStr += ` WHERE deletedAt IS NULL`;
+      queryStr += ` WHERE (deletedAt IS NULL OR deletedAt = '0000-00-00 00:00:00')`;
       if (statusFilter) {
         queryStr += ` AND status = ?`;
         queryParams.push(statusFilter);
       }
     } else {
       if (statusFilter === 'Trash') {
-        queryStr += ` WHERE deletedAt IS NOT NULL`;
+        queryStr += ` WHERE (deletedAt IS NOT NULL AND deletedAt != '0000-00-00 00:00:00')`;
       } else if (statusFilter) {
-        queryStr += ` WHERE deletedAt IS NULL AND status = ?`;
+        queryStr += ` WHERE (deletedAt IS NULL OR deletedAt = '0000-00-00 00:00:00') AND status = ?`;
         queryParams.push(statusFilter);
       }
     }
