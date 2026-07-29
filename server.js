@@ -859,13 +859,11 @@ app.post('/api/products/bulk', verifyRole(['admin', 'manager']), async (req, res
       return res.status(400).json({ error: 'Body must be an array of products' });
     }
 
-    // Step 1: Process all main products first
-    const mainItems = products.filter(item => !item.parentSku || item.parentSku === item.sku);
-    for (const item of mainItems) {
-      const { name, sku, barcode, categoryName, costPrice, sellingPrice, stock, alertQty } = item;
-      if (!name || !sku) continue;
+    for (const item of products) {
+      const { name, sku, barcode, categoryName, costPrice, sellingPrice, stock, alertQty, tag, variations } = item;
+      if (!sku) continue;
 
-      // Check/Create category
+      // 1. Check or create category
       let categoryId = 'cat-uncategorized';
       if (categoryName) {
         const catRows = await dbQuery(`SELECT id FROM categories WHERE name = ?`, [categoryName]);
@@ -877,45 +875,37 @@ app.post('/api/products/bulk', verifyRole(['admin', 'manager']), async (req, res
         }
       }
 
-      // Check if product with this SKU exists
+      // 2. Check if product with this SKU exists
       const prodRows = await dbQuery(`SELECT id FROM products WHERE sku = ?`, [sku]);
+      let pid;
       if (prodRows.length > 0) {
-        const pid = prodRows[0].id;
-        await dbQuery(`UPDATE products SET name = ?, barcode = ?, categoryId = ?, costPrice = ?, sellingPrice = ?, stock = ?, alertQty = ? WHERE id = ?`,
-          [name, barcode || null, categoryId, costPrice || 0, sellingPrice || 0, stock || 0, alertQty || 0, pid]);
+        pid = prodRows[0].id;
+        // Update existing product
+        await dbQuery(`UPDATE products SET name = ?, categoryId = ?, costPrice = ?, sellingPrice = ?, stock = ?, alertQty = ?, tag = ? WHERE id = ?`,
+          [name || `Product ${sku}`, categoryId, costPrice || 0, sellingPrice || 0, stock || 0, alertQty || 5, tag || null, pid]);
       } else {
-        const newPid = 'prod_' + Math.random().toString(36).substr(2, 9);
-        await dbQuery(`INSERT INTO products (id, name, sku, barcode, categoryId, costPrice, sellingPrice, stock, alertQty, image) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '')`,
-          [newPid, name, sku, barcode || null, categoryId, costPrice || 0, sellingPrice || 0, stock || 0, alertQty || 0]);
+        pid = 'prod_' + Math.random().toString(36).substr(2, 9);
+        // Insert new product
+        await dbQuery(`INSERT INTO products (id, name, sku, barcode, categoryId, costPrice, sellingPrice, stock, alertQty, image, tag) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?)`,
+          [pid, name || `Product ${sku}`, sku, barcode || null, categoryId, costPrice || 0, sellingPrice || 0, stock || 0, alertQty || 5, tag || null]);
       }
-    }
 
-    // Step 2: Process variations
-    const varItems = products.filter(item => item.parentSku && item.parentSku !== item.sku);
-    for (const item of varItems) {
-      const { name, sku, barcode, parentSku, variationName, costPrice, sellingPrice, stock } = item;
-      if (!sku || !parentSku) continue;
+      // 3. Process variations if variations are specified in payload
+      if (variations && variations.length > 0) {
+        // Clear old variations of this product
+        await dbQuery(`DELETE FROM variations WHERE productId = ?`, [pid]);
+        
+        for (const v of variations) {
+          const vid = 'var_' + Math.random().toString(36).substr(2, 9);
+          await dbQuery(`INSERT INTO variations (id, productId, name, sku, barcode, price, costPrice, stock) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [vid, pid, v.name || 'Default', v.sku, v.barcode || null, v.price || 0, v.costPrice || 0, v.stock || 0]);
+        }
 
-      // Find parent product ID
-      const parentRows = await dbQuery(`SELECT id FROM products WHERE sku = ?`, [parentSku]);
-      if (parentRows.length === 0) {
-        continue; // Skip variation if parent product is missing
-      }
-      const parentId = parentRows[0].id;
-
-      // Check if variation SKU exists
-      const varRows = await dbQuery(`SELECT id FROM variations WHERE sku = ?`, [sku]);
-      const vName = variationName || name || 'Default';
-      if (varRows.length > 0) {
-        const vid = varRows[0].id;
-        await dbQuery(`UPDATE variations SET name = ?, barcode = ?, price = ?, costPrice = ?, stock = ? WHERE id = ?`,
-          [vName, barcode || null, sellingPrice || 0, costPrice || 0, stock || 0, vid]);
-      } else {
-        const newVid = 'var_' + Math.random().toString(36).substr(2, 9);
-        await dbQuery(`INSERT INTO variations (id, productId, name, sku, barcode, price, costPrice, stock) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [newVid, parentId, vName, sku, barcode || null, sellingPrice || 0, costPrice || 0, stock || 0]);
+        // Sum up and save total variations stock as the main product stock
+        const totalVarStock = variations.reduce((sum, v) => sum + (parseInt(v.stock) || 0), 0);
+        await dbQuery(`UPDATE products SET stock = ? WHERE id = ?`, [totalVarStock, pid]);
       }
     }
 
