@@ -343,6 +343,34 @@ const initDB = async () => {
   }
 
   // Seeding Catalog if empty
+  // Auto-migration check: status, deletedAt, priority columns
+  try {
+    const statusCol = await dbQuery(`SHOW COLUMNS FROM products LIKE 'status'`);
+    if (statusCol.length === 0) {
+      await dbQuery(`ALTER TABLE products ADD COLUMN status VARCHAR(50) DEFAULT 'Publish'`);
+      console.log('Database Migration: Added "status" column to products.');
+    }
+    const deletedCol = await dbQuery(`SHOW COLUMNS FROM products LIKE 'deletedAt'`);
+    if (deletedCol.length === 0) {
+      await dbQuery(`ALTER TABLE products ADD COLUMN deletedAt DATETIME DEFAULT NULL`);
+      console.log('Database Migration: Added "deletedAt" column to products.');
+    }
+    const priorityCol = await dbQuery(`SHOW COLUMNS FROM products LIKE 'priority'`);
+    if (priorityCol.length === 0) {
+      await dbQuery(`ALTER TABLE products ADD COLUMN priority INT DEFAULT 0`);
+      console.log('Database Migration: Added "priority" column to products.');
+    }
+  } catch (migErr) {
+    console.warn('Migration error for status/deletedAt/priority:', migErr.message);
+  }
+
+  // Auto-cleanup: Permanently delete trashed products older than 30 days
+  try {
+    await dbQuery(`DELETE FROM products WHERE deletedAt IS NOT NULL AND deletedAt < DATE_SUB(NOW(), INTERVAL 30 DAY)`);
+  } catch (cleanupErr) {
+    console.warn('Warning during database trash auto-cleanup:', cleanupErr.message);
+  }
+
   const prods = await dbQuery(`SELECT count(*) as count FROM products`);
   if (prods[0].count === 0) {
     await seedCatalog();
@@ -819,7 +847,30 @@ app.delete('/api/categories/:id', verifyRole(['admin', 'manager']), async (req, 
 // Products
 app.get('/api/products', async (req, res) => {
   try {
-    const prods = await dbQuery(`SELECT * FROM products`);
+    const includeTrashed = req.query.includeTrashed === 'true';
+    const statusFilter = req.query.status;
+
+    let queryStr = `SELECT * FROM products`;
+    const queryParams = [];
+
+    if (!includeTrashed) {
+      queryStr += ` WHERE deletedAt IS NULL`;
+      if (statusFilter) {
+        queryStr += ` AND status = ?`;
+        queryParams.push(statusFilter);
+      }
+    } else {
+      if (statusFilter === 'Trash') {
+        queryStr += ` WHERE deletedAt IS NOT NULL`;
+      } else if (statusFilter) {
+        queryStr += ` WHERE deletedAt IS NULL AND status = ?`;
+        queryParams.push(statusFilter);
+      }
+    }
+
+    queryStr += ` ORDER BY priority DESC, name ASC`;
+
+    const prods = await dbQuery(queryStr, queryParams);
     const vars = await dbQuery(`SELECT * FROM variations`);
 
     const result = prods.map(p => {
@@ -834,10 +885,10 @@ app.get('/api/products', async (req, res) => {
 
 app.post('/api/products', verifyRole(['admin', 'manager']), async (req, res) => {
   try {
-    const { id, name, sku, barcode, categoryId, costPrice, sellingPrice, stock, alertQty, image, tag, variations } = req.body;
-    await dbQuery(`INSERT INTO products (id, name, sku, barcode, categoryId, costPrice, sellingPrice, stock, alertQty, image, tag) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, name, sku, barcode, categoryId, costPrice, sellingPrice, stock, alertQty, image, tag || null]);
+    const { id, name, sku, barcode, categoryId, costPrice, sellingPrice, stock, alertQty, image, tag, status, priority, variations } = req.body;
+    await dbQuery(`INSERT INTO products (id, name, sku, barcode, categoryId, costPrice, sellingPrice, stock, alertQty, image, tag, status, priority) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, name, sku, barcode, categoryId, costPrice, sellingPrice, stock, alertQty, image, tag || null, status || 'Publish', parseInt(priority) || 0]);
 
     if (variations && variations.length > 0) {
       for (const v of variations) {
@@ -918,11 +969,11 @@ app.post('/api/products/bulk', verifyRole(['admin', 'manager']), async (req, res
 app.put('/api/products/:id', verifyRole(['admin', 'manager']), async (req, res) => {
   try {
     const pid = req.params.id;
-    const { name, sku, barcode, categoryId, costPrice, sellingPrice, stock, alertQty, image, tag, variations } = req.body;
+    const { name, sku, barcode, categoryId, costPrice, sellingPrice, stock, alertQty, image, tag, status, priority, variations } = req.body;
 
     await dbQuery(`UPDATE products SET name = ?, sku = ?, barcode = ?, categoryId = ?, costPrice = ?, 
-      sellingPrice = ?, stock = ?, alertQty = ?, image = ?, tag = ? WHERE id = ?`,
-      [name, sku, barcode, categoryId, costPrice, sellingPrice, stock, alertQty, image, tag || null, pid]);
+      sellingPrice = ?, stock = ?, alertQty = ?, image = ?, tag = ?, status = ?, priority = ? WHERE id = ?`,
+      [name, sku, barcode, categoryId, costPrice, sellingPrice, stock, alertQty, image, tag || null, status || 'Publish', parseInt(priority) || 0, pid]);
 
     await dbQuery(`DELETE FROM variations WHERE productId = ?`, [pid]);
     if (variations && variations.length > 0) {
@@ -941,8 +992,23 @@ app.put('/api/products/:id', verifyRole(['admin', 'manager']), async (req, res) 
 app.delete('/api/products/:id', verifyRole(['admin', 'manager']), async (req, res) => {
   try {
     const pid = req.params.id;
-    await dbQuery(`DELETE FROM products WHERE id = ?`, [pid]);
-    await dbQuery(`DELETE FROM variations WHERE productId = ?`, [pid]);
+    const permanent = req.query.permanent === 'true';
+    if (permanent) {
+      await dbQuery(`DELETE FROM products WHERE id = ?`, [pid]);
+      await dbQuery(`DELETE FROM variations WHERE productId = ?`, [pid]);
+    } else {
+      await dbQuery(`UPDATE products SET deletedAt = NOW() WHERE id = ?`, [pid]);
+    }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/products/:id/restore', verifyRole(['admin', 'manager']), async (req, res) => {
+  try {
+    const pid = req.params.id;
+    await dbQuery(`UPDATE products SET deletedAt = NULL WHERE id = ?`, [pid]);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
