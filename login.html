@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Retail POS Login Panel">
-  <title>Sign In — ZenPos</title>
+  <title>Sign In — TAFFY Uttara</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏪</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,7 +18,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: radial-gradient(circle at 10% 20%, rgb(90, 92, 234) 0%, rgb(32, 45, 107) 100%);
+      background: radial-gradient(circle at 10% 20%, rgb(111, 78, 55) 0%, rgb(72, 44, 34) 100%);
       font-family: 'Inter', sans-serif;
     }
     .login-container {
@@ -30,7 +30,7 @@
       border: none;
       border-radius: var(--radius);
       box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-      background: rgba(255, 255, 255, 0.95);
+      background: rgba(245, 242, 235, 0.95);
       backdrop-filter: blur(10px);
       padding: 40px 30px;
       animation: fadeIn 0.5s ease;
@@ -88,7 +88,7 @@
     .btn-login {
       width: 100%;
       height: 46px;
-      background: var(--primary);
+      background: #534419;
       color: #fff;
       border: none;
       border-radius: var(--radius-sm);
@@ -133,7 +133,7 @@
     <div class="login-card">
       <div class="logo-container">
         <span class="logo-icon">🏪</span>
-        <h2 class="logo-title">ZenPos</h2>
+        <h2 class="logo-title">TAFFY - Uttara</h2>
         <p class="logo-subtitle">Point of Sale Login Panel</p>
       </div>
 
@@ -144,8 +144,8 @@
       <div id="login-section">
         <form id="login-form">
           <div class="form-group">
-            <label class="form-label" for="username">Username</label>
-            <input type="text" class="form-input" id="username" placeholder="Enter username" required autocomplete="username">
+            <label class="form-label" for="username">Username/Email</label>
+            <input type="text" class="form-input" id="username" placeholder="Enter username or Email" required autocomplete="username">
           </div>
           <div class="form-group">
             <label class="form-label" for="password">Password</label>
@@ -156,13 +156,6 @@
           </div>
           <button type="submit" class="btn-login" id="btn-submit">Sign In 🚀</button>
         </form>
-
-        <div class="demo-accounts">
-          <strong>Demo Accounts Setup:</strong><br>
-          • admin / admin (Full access)<br>
-          • manager / manager (Inventory & Sales)<br>
-          • cashier / cashier (Billing desk only)
-        </div>
       </div>
 
       <!-- ── Forgot Password Section ────────────────── -->
