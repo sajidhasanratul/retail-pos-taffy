@@ -209,7 +209,7 @@
               'salePrice': p.sellingPrice,
               'regular_price': p.sellingPrice,
               'costPrice': p.costPrice,
-              'quantity': p.stock,
+              'quantity': 0,
               'variation_name': '',
               'variation_value': '',
               'variation_sku': '',
