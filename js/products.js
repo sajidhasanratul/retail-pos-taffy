@@ -59,41 +59,62 @@
         list.forEach(p => {
           const cat = categoriesList.find(c => c.id === p.categoryId);
           const catName = cat ? cat.name : 'Uncategorized';
+          const slug = p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+          const tags = p.tag || '';
 
-          // First, export the main product row
-          csvData.push({
-            'Product Name': p.name,
-            'SKU': p.sku,
-            'Parent SKU': '',
-            'Variation Name': '',
-            'Barcode': p.barcode || '',
-            'Category Name': catName,
-            'Cost Price': p.costPrice,
-            'Selling Price': p.sellingPrice,
-            'Alert Qty': p.alertQty,
-            'Stock': p.stock
-          });
-
-          // Second, export its variations if any
           if (p.variations && p.variations.length > 0) {
             p.variations.forEach(v => {
+              // Parse variation name back (e.g., "Size: M" -> name="Size", value="M")
+              let varName = 'Size';
+              let varValue = v.name;
+              if (v.name.includes(':')) {
+                const parts = v.name.split(':');
+                varName = parts[0].trim();
+                varValue = parts.slice(1).join(':').trim();
+              }
+
               csvData.push({
-                'Product Name': p.name,
-                'SKU': v.sku,
-                'Parent SKU': p.sku,
-                'Variation Name': v.name,
-                'Barcode': v.barcode || '',
-                'Category Name': catName,
-                'Cost Price': v.costPrice,
-                'Selling Price': v.price,
-                'Alert Qty': p.alertQty,
-                'Stock': v.stock
+                'name': p.name,
+                'slug': slug,
+                'category': catName,
+                'tags': tags,
+                'sku': p.sku,
+                'salePrice': p.sellingPrice,
+                'regular_price': p.sellingPrice,
+                'costPrice': p.costPrice,
+                'quantity': p.stock,
+                'variation_name': varName,
+                'variation_value': varValue,
+                'variation_sku': v.sku,
+                'variation_cost_price': v.costPrice,
+                'variation_sales_price': v.price,
+                'variation_regular_price': v.price,
+                'variation_quantity': v.stock
               });
+            });
+          } else {
+            csvData.push({
+              'name': p.name,
+              'slug': slug,
+              'category': catName,
+              'tags': tags,
+              'sku': p.sku,
+              'salePrice': p.sellingPrice,
+              'regular_price': p.sellingPrice,
+              'costPrice': p.costPrice,
+              'quantity': p.stock,
+              'variation_name': '',
+              'variation_value': '',
+              'variation_sku': '',
+              'variation_cost_price': '',
+              'variation_sales_price': '',
+              'variation_regular_price': '',
+              'variation_quantity': ''
             });
           }
         });
 
-        H.exportCSV(csvData, 'zenpos_products_catalog');
+        H.exportCSV(csvData, 'products_export');
       };
 
       document.getElementById('file-import-csv').onchange = (e) => {
