@@ -21,8 +21,8 @@
           <div class="page-actions" style="display:flex; gap:8px; align-items:center;">
             <button class="btn btn-secondary btn-sm" id="btn-export-csv">📥 Export CSV</button>
             <label class="btn btn-secondary btn-sm" style="cursor:pointer; margin-bottom:0; display:inline-flex; align-items:center; height:34px; padding:0 12px; font-weight:600; font-size:12px; border-radius:var(--radius-sm);">
-              📤 Import CSV
-              <input type="file" id="file-import-csv" accept=".csv" style="display:none;">
+              📤 Import CSV / Excel
+              <input type="file" id="file-import-csv" accept=".csv,.xlsx,.xls" style="display:none;">
             </label>
             <button class="btn btn-secondary btn-sm" id="btn-manage-categories">📁 Categories</button>
             <button class="btn btn-primary btn-sm" id="btn-add-product">+ Add Product</button>
@@ -100,33 +100,94 @@
         const file = e.target.files[0];
         if (!file) return;
 
+        const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
         const reader = new FileReader();
+
         reader.onload = async (ev) => {
           try {
-            const csvText = ev.target.result;
-            const rows = H.parseCSV(csvText);
+            let rows = [];
+            if (isExcel) {
+              // Parse Excel using SheetJS
+              const data = new Uint8Array(ev.target.result);
+              const workbook = XLSX.read(data, { type: 'array' });
+              const firstSheetName = workbook.SheetNames[0];
+              const worksheet = workbook.Sheets[firstSheetName];
+              rows = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+            } else {
+              // Parse CSV
+              const csvText = ev.target.result;
+              rows = H.parseCSV(csvText);
+            }
+
             if (rows.length === 0) {
-              H.showToast('CSV is empty or invalid', 'error');
+              H.showToast('Import file is empty or invalid', 'error');
               return;
             }
 
-            const productsToImport = rows.map(r => {
-              return {
-                name: r['Product Name'] || r['name'] || r['Product'] || '',
-                sku: r['SKU'] || r['sku'] || '',
-                parentSku: r['Parent SKU'] || r['parentSku'] || r['parent_sku'] || '',
-                variationName: r['Variation Name'] || r['variationName'] || r['variation'] || '',
-                barcode: r['Barcode'] || r['barcode'] || '',
-                categoryName: r['Category Name'] || r['category'] || '',
-                costPrice: parseFloat(r['Cost Price'] || r['costPrice'] || r['cost'] || 0),
-                sellingPrice: parseFloat(r['Selling Price'] || r['sellingPrice'] || r['price'] || 0),
-                alertQty: parseInt(r['Alert Qty'] || r['alertQty'] || 0),
-                stock: parseFloat(r['Stock'] || r['stock'] || 0)
-              };
-            }).filter(item => item.name && item.sku);
+            // Group products by main product SKU
+            const productsMap = {};
+
+            rows.forEach(r => {
+              const skuRaw = (r['sku'] || r['SKU'] || '').toString().trim();
+              if (!skuRaw) return; // Skip rows without SKU
+
+              const name = (r['name'] || r['Product Name'] || r['Product'] || '').toString().trim();
+              const category = (r['category'] || r['Category Name'] || r['categoryName'] || '').toString().trim();
+              const tags = (r['tags'] || r['Tags'] || r['tag'] || r['Tag'] || '').toString().trim();
+              
+              // Selling price prioritizes salePrice, sale_price, Selling Price, price, sales_price
+              const salePrice = parseFloat(r['salePrice'] || r['sale_price'] || r['regular_price'] || r['regularPrice'] || r['Selling Price'] || r['price'] || r['sales_price'] || 0);
+              const costPrice = parseFloat(r['costPrice'] || r['cost_price'] || r['Cost Price'] || r['cost'] || 0);
+              const quantity = parseInt(r['quantity'] || r['Quantity'] || r['stock'] || r['Stock'] || 0);
+              const barcode = (r['barcode'] || r['Barcode'] || '').toString().trim();
+
+              if (!productsMap[skuRaw]) {
+                productsMap[skuRaw] = {
+                  name: name || `Product ${skuRaw}`,
+                  sku: skuRaw,
+                  barcode: barcode || null,
+                  categoryName: category || 'Uncategorized',
+                  tag: tags || null,
+                  costPrice: costPrice,
+                  sellingPrice: salePrice,
+                  stock: quantity,
+                  alertQty: 5,
+                  variations: []
+                };
+              }
+
+              // Variation details
+              const varName = (r['variation_name'] || r['variationName'] || r['Variation Name'] || '').toString().trim();
+              const varValue = (r['variation_value'] || r['variationValue'] || r['Variation Value'] || '').toString().trim();
+
+              if (varName || varValue) {
+                const varSkuRaw = (r['variation_sku'] || r['variationSku'] || r['Variation SKU'] || '').toString().trim();
+                let varSku = varSkuRaw;
+                if (!varSku || varSku === skuRaw) {
+                  varSku = `${skuRaw}-${varValue}`;
+                }
+
+                const varCost = parseFloat(r['variation_cost_price'] || r['variationCostPrice'] || costPrice);
+                const varPrice = parseFloat(r['variation_sales_price'] || r['variationSalesPrice'] || r['variation_regular_price'] || salePrice);
+                const varQty = parseInt(r['variation_quantity'] || r['variationQuantity'] || 0);
+
+                const combinedVarName = varName && varValue ? `${varName}: ${varValue}` : (varValue || varName);
+
+                productsMap[skuRaw].variations.push({
+                  name: combinedVarName,
+                  sku: varSku,
+                  barcode: null,
+                  price: varPrice,
+                  costPrice: varCost,
+                  stock: varQty
+                });
+              }
+            });
+
+            const productsToImport = Object.values(productsMap);
 
             if (productsToImport.length === 0) {
-              H.showToast('No valid product rows with Name and SKU found', 'error');
+              H.showToast('No valid product rows with SKU found', 'error');
               return;
             }
 
@@ -137,7 +198,7 @@
             });
 
             if (res.ok) {
-              H.showToast(`Imported ${productsToImport.length} products successfully!`);
+              H.showToast(`Imported/Updated ${productsToImport.length} products successfully!`);
               await this.render();
             } else {
               const err = await res.json();
@@ -145,10 +206,15 @@
             }
           } catch (err) {
             console.error('Import Error:', err);
-            H.showToast('Invalid CSV file format', 'error');
+            H.showToast('Invalid file format or sheet structure', 'error');
           }
         };
-        reader.readAsText(file);
+
+        if (isExcel) {
+          reader.readAsArrayBuffer(file);
+        } else {
+          reader.readAsText(file);
+        }
       };
 
       document.getElementById('prod-search').oninput = H.debounce(async (e) => {
