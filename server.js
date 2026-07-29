@@ -347,17 +347,20 @@ const initDB = async () => {
   try {
     const statusCol = await dbQuery(`SHOW COLUMNS FROM products LIKE 'status'`);
     if (statusCol.length === 0) {
-      await dbQuery(`ALTER TABLE products ADD COLUMN status VARCHAR(50) DEFAULT 'Publish'`);
+      await dbQuery(`ALTER TABLE products ADD COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Publish'`);
       console.log('Database Migration: Added "status" column to products.');
     }
     const deletedCol = await dbQuery(`SHOW COLUMNS FROM products LIKE 'deletedAt'`);
     if (deletedCol.length === 0) {
-      await dbQuery(`ALTER TABLE products ADD COLUMN deletedAt DATETIME DEFAULT NULL`);
+      await dbQuery(`ALTER TABLE products ADD COLUMN deletedAt DATETIME NULL DEFAULT NULL`);
       console.log('Database Migration: Added "deletedAt" column to products.');
+    } else {
+      // Force modify the column to ensure DEFAULT NULL is set if it already exists with wrong default
+      await dbQuery(`ALTER TABLE products MODIFY COLUMN deletedAt DATETIME NULL DEFAULT NULL`);
     }
     const priorityCol = await dbQuery(`SHOW COLUMNS FROM products LIKE 'priority'`);
     if (priorityCol.length === 0) {
-      await dbQuery(`ALTER TABLE products ADD COLUMN priority INT DEFAULT 0`);
+      await dbQuery(`ALTER TABLE products ADD COLUMN priority INT NOT NULL DEFAULT 0`);
       console.log('Database Migration: Added "priority" column to products.');
     }
   } catch (migErr) {
