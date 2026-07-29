@@ -82,7 +82,7 @@
                 'salePrice': p.sellingPrice,
                 'regular_price': p.sellingPrice,
                 'costPrice': p.costPrice,
-                'quantity': p.stock,
+                'quantity': 0,
                 'variation_name': varName,
                 'variation_value': varValue,
                 'variation_sku': v.sku,
@@ -182,6 +182,9 @@
               const varValue = (r['variation_value'] || r['variationValue'] || r['Variation Value'] || '').toString().trim();
 
               if (varName || varValue) {
+                // Force main product stock to 0 as it has variations
+                productsMap[skuRaw].stock = 0;
+
                 const varSkuRaw = (r['variation_sku'] || r['variationSku'] || r['Variation SKU'] || '').toString().trim();
                 let varSku = varSkuRaw;
                 if (!varSku || varSku === skuRaw) {
