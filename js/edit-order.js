@@ -276,6 +276,8 @@
         const matches = [];
 
         prods.forEach(p => {
+          if (p.deletedAt && p.deletedAt !== '0000-00-00 00:00:00') return;
+
           const mainMatch = p.name.toLowerCase().includes(query) || p.sku.toLowerCase().includes(query) || (p.barcode && p.barcode.includes(query)) || (p.tag && p.tag.toLowerCase().includes(query));
           if (mainMatch) {
             if (p.variations && p.variations.length > 0) {
