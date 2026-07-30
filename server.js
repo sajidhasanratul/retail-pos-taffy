@@ -374,6 +374,14 @@ const initDB = async () => {
     console.warn('Warning during database trash auto-cleanup:', cleanupErr.message);
   }
 
+  // Data recovery fix: Reset deletedAt to NULL to restore active products
+  try {
+    await dbQuery(`UPDATE products SET deletedAt = NULL`);
+    console.log('Database Data Fix: Restored all products from default timestamp issue.');
+  } catch (err) {
+    console.warn('Could not reset deletedAt values:', err.message);
+  }
+  
   const prods = await dbQuery(`SELECT count(*) as count FROM products`);
   if (prods[0].count === 0) {
     await seedCatalog();
