@@ -278,19 +278,27 @@
         prods.forEach(p => {
           if (p.deletedAt && p.deletedAt !== '0000-00-00 00:00:00') return;
 
-          const mainMatch = p.name.toLowerCase().includes(query) || p.sku.toLowerCase().includes(query) || (p.barcode && p.barcode.includes(query)) || (p.tag && p.tag.toLowerCase().includes(query));
+          const pNameMatch = p.name ? p.name.toLowerCase().includes(query) : false;
+          const pSkuMatch = p.sku ? p.sku.toLowerCase().includes(query) : false;
+          const pBarcodeMatch = p.barcode ? p.barcode.includes(query) : false;
+          const pTagMatch = p.tag ? p.tag.toLowerCase().includes(query) : false;
+
+          const mainMatch = pNameMatch || pSkuMatch || pBarcodeMatch || pTagMatch;
           if (mainMatch) {
             if (p.variations && p.variations.length > 0) {
               p.variations.forEach(v => {
-                matches.push({ product: p, variant: v, name: `${p.name} - ${v.name}`, sku: v.sku, barcode: v.barcode, price: v.price, stock: v.stock });
+                matches.push({ product: p, variant: v, name: `${p.name || ''} - ${v.name || ''}`, sku: v.sku, barcode: v.barcode, price: v.price, stock: v.stock });
               });
             } else {
               matches.push({ product: p, variant: null, name: p.name, sku: p.sku, barcode: p.barcode, price: p.sellingPrice, stock: p.stock });
             }
           } else if (p.variations && p.variations.length > 0) {
             p.variations.forEach(v => {
-              if (v.name.toLowerCase().includes(query) || v.sku.toLowerCase().includes(query) || (v.barcode && v.barcode.includes(query))) {
-                matches.push({ product: p, variant: v, name: `${p.name} - ${v.name}`, sku: v.sku, barcode: v.barcode, price: v.price, stock: v.stock });
+              const vNameMatch = v.name ? v.name.toLowerCase().includes(query) : false;
+              const vSkuMatch = v.sku ? v.sku.toLowerCase().includes(query) : false;
+              const vBarcodeMatch = v.barcode ? v.barcode.includes(query) : false;
+              if (vNameMatch || vSkuMatch || vBarcodeMatch) {
+                matches.push({ product: p, variant: v, name: `${p.name || ''} - ${v.name || ''}`, sku: v.sku, barcode: v.barcode, price: v.price, stock: v.stock });
               }
             });
           }
