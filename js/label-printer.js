@@ -210,11 +210,12 @@
           return;
         }
 
-        const matches = products.filter(p => 
-          p.name.toLowerCase().includes(q) || 
-          p.sku.toLowerCase().includes(q) || 
-          (p.barcode && p.barcode.includes(q))
-        );
+        const matches = products.filter(p => {
+          const nameMatch = p.name ? p.name.toLowerCase().includes(q) : false;
+          const skuMatch = p.sku ? p.sku.toLowerCase().includes(q) : false;
+          const barcodeMatch = p.barcode ? p.barcode.includes(q) : false;
+          return nameMatch || skuMatch || barcodeMatch;
+        });
 
         if (matches.length === 0) {
           resultsDiv.innerHTML = `<div style="padding:10px; color:#64748b; font-size:12px; font-style:italic;">No products match query.</div>`;
