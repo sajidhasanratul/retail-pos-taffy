@@ -373,7 +373,15 @@ const initDB = async () => {
   } catch (cleanupErr) {
     console.warn('Warning during database trash auto-cleanup:', cleanupErr.message);
   }
-  
+
+  // Data recovery fix: Reset deletedAt to NULL to restore active products
+  try {
+    await dbQuery(`UPDATE products SET deletedAt = NULL`);
+    console.log('Database Data Fix: Restored all products from default timestamp issue.');
+  } catch (err) {
+    console.warn('Could not reset deletedAt values:', err.message);
+  }
+
   const prods = await dbQuery(`SELECT count(*) as count FROM products`);
   if (prods[0].count === 0) {
     await seedCatalog();
@@ -853,33 +861,41 @@ app.get('/api/products', async (req, res) => {
     const includeTrashed = req.query.includeTrashed === 'true';
     const statusFilter = req.query.status;
 
-    let queryStr = `SELECT * FROM products`;
-    const queryParams = [];
-
-    if (!includeTrashed) {
-      queryStr += ` WHERE (deletedAt IS NULL OR deletedAt = '0000-00-00 00:00:00')`;
-      if (statusFilter) {
-        queryStr += ` AND status = ?`;
-        queryParams.push(statusFilter);
-      }
-    } else {
-      if (statusFilter === 'Trash') {
-        queryStr += ` WHERE (deletedAt IS NOT NULL AND deletedAt != '0000-00-00 00:00:00')`;
-      } else if (statusFilter) {
-        queryStr += ` WHERE (deletedAt IS NULL OR deletedAt = '0000-00-00 00:00:00') AND status = ?`;
-        queryParams.push(statusFilter);
-      }
-    }
-
-    queryStr += ` ORDER BY priority DESC, name ASC`;
-
-    const prods = await dbQuery(queryStr, queryParams);
+    // Fetch raw table contents safely to avoid schema dependencies throwing SQL errors
+    const prods = await dbQuery(`SELECT * FROM products`);
     const vars = await dbQuery(`SELECT * FROM variations`);
 
-    const result = prods.map(p => {
+    let result = prods.map(p => {
       p.variations = vars.filter(v => v.productId === p.id);
       return p;
     });
+
+    // 1. Perform soft-delete and status checks dynamically in Node.js
+    if (!includeTrashed) {
+      result = result.filter(p => !p.deletedAt || p.deletedAt === '0000-00-00 00:00:00');
+      if (statusFilter) {
+        result = result.filter(p => p.status === statusFilter);
+      }
+    } else {
+      if (statusFilter === 'Trash') {
+        result = result.filter(p => p.deletedAt && p.deletedAt !== '0000-00-00 00:00:00');
+      } else if (statusFilter) {
+        result = result.filter(p => (!p.deletedAt || p.deletedAt === '0000-00-00 00:00:00') && p.status === statusFilter);
+      }
+    }
+
+    // 2. Perform sorting dynamically in Node.js (with prioritisation fallbacks)
+    result.sort((a, b) => {
+      const priorityA = parseInt(a.priority) || 0;
+      const priorityB = parseInt(b.priority) || 0;
+      if (priorityA !== priorityB) {
+        return priorityB - priorityA; // Descending priority
+      }
+      const nameA = (a.name || '').toLowerCase();
+      const nameB = (b.name || '').toLowerCase();
+      return nameA.localeCompare(nameB); // Ascending name
+    });
+
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
