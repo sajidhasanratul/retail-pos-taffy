@@ -909,6 +909,7 @@ app.get('/api/products', async (req, res) => {
       return nameA.localeCompare(nameB); // Ascending name
     });
 
+    console.log(`[GET /api/products] includeTrashed=${includeTrashed} count=${result.length}`);
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
