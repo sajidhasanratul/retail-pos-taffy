@@ -209,10 +209,12 @@
       const S = POS.Store;
       const H = POS.Helpers;
 
-      // Auto-close search result dropdowns
+      // Auto-close search result dropdowns (only if elements exist in current view)
       document.addEventListener('click', (e) => {
-        if (!e.target.closest('#search-customer')) document.getElementById('customer-results').classList.remove('open');
-        if (!e.target.closest('#search-product')) document.getElementById('product-results').classList.remove('open');
+        const custEl = document.getElementById('customer-results');
+        const prodEl = document.getElementById('product-results');
+        if (custEl && !e.target.closest('#search-customer')) custEl.classList.remove('open');
+        if (prodEl && !e.target.closest('#search-product')) prodEl.classList.remove('open');
       });
 
       // Customer Search
