@@ -870,17 +870,30 @@ app.get('/api/products', async (req, res) => {
       return p;
     });
 
+    // Helper to determine if a deletedAt value represents a real deletion timestamp
+    const isTrashed = (val) => {
+      if (!val) return false;
+      if (val === '0000-00-00 00:00:00') return false;
+      if (val instanceof Date) {
+        if (isNaN(val.getTime())) return false;
+        if (val.getFullYear() <= 1970) return false; // MySQL default or epoch
+        return true;
+      }
+      if (typeof val === 'string' && val.includes('0000-00-00')) return false;
+      return true;
+    };
+
     // 1. Perform soft-delete and status checks dynamically in Node.js
     if (!includeTrashed) {
-      result = result.filter(p => !p.deletedAt || p.deletedAt === '0000-00-00 00:00:00');
+      result = result.filter(p => !isTrashed(p.deletedAt));
       if (statusFilter) {
         result = result.filter(p => p.status === statusFilter);
       }
     } else {
       if (statusFilter === 'Trash') {
-        result = result.filter(p => p.deletedAt && p.deletedAt !== '0000-00-00 00:00:00');
+        result = result.filter(p => isTrashed(p.deletedAt));
       } else if (statusFilter) {
-        result = result.filter(p => (!p.deletedAt || p.deletedAt === '0000-00-00 00:00:00') && p.status === statusFilter);
+        result = result.filter(p => !isTrashed(p.deletedAt) && p.status === statusFilter);
       }
     }
 
