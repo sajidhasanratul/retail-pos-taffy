@@ -237,9 +237,9 @@
         resultsDiv.style.display = 'block';
       }, 150);
 
-      // Hide dropdown if clicked outside
+      // Hide dropdown if clicked outside (only if element exists in current view)
       document.addEventListener('click', (e) => {
-        if (e.target !== searchInput && e.target !== resultsDiv) {
+        if (document.body.contains(resultsDiv) && e.target !== searchInput && e.target !== resultsDiv) {
           resultsDiv.style.display = 'none';
         }
       });
