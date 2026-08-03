@@ -50,7 +50,7 @@
       this.payments = pmts.map(p => ({
         method: p.method,
         amount: parseFloat(p.amount) || 0,
-        lastFour: p.lastFour || ''
+        lastFour: p.lastFour || p.lastfour || ''
       }));
 
       if (this.payments.length === 0) {
