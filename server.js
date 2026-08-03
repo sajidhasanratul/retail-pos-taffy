@@ -304,6 +304,8 @@ const initDB = async () => {
       ('store_name', 'ZenPos Store'),
       ('store_address', '123 Market Street, Dhaka'),
       ('store_phone', '01700000000'),
+      ('store_website', 'www.zenpos.com'),
+      ('invoice_note', 'Goods once sold cannot be returned or exchanged.'),
       ('invoice_style', 'theme-modern'),
       ('default_print_type', 'receipt'),
       ('receipt_style', 'style-1'),
@@ -321,6 +323,8 @@ const initDB = async () => {
       ('label_show_attribs', '0')`);
   } else {
     const defaultLabelKeys = {
+      'store_website': 'www.zenpos.com',
+      'invoice_note': 'Goods once sold cannot be returned or exchanged.',
       'invoice_style': 'theme-modern',
       'default_print_type': 'receipt',
       'receipt_style': 'style-1',
@@ -363,8 +367,13 @@ const initDB = async () => {
       await dbQuery(`ALTER TABLE products ADD COLUMN priority INT NOT NULL DEFAULT 0`);
       console.log('Database Migration: Added "priority" column to products.');
     }
+    const paymentCols = await dbQuery(`SHOW COLUMNS FROM payments LIKE 'lastFour'`);
+    if (paymentCols.length === 0) {
+      await dbQuery(`ALTER TABLE payments ADD COLUMN lastFour VARCHAR(10) DEFAULT NULL`);
+      console.log('Database Migration: Added "lastFour" column to payments table.');
+    }
   } catch (migErr) {
-    console.warn('Migration error for status/deletedAt/priority:', migErr.message);
+    console.warn('Migration error for status/deletedAt/priority/lastFour:', migErr.message);
   }
 
   // Auto-cleanup: Permanently delete trashed products older than 30 days
@@ -1149,8 +1158,8 @@ app.post('/api/orders', async (req, res) => {
     }
 
     for (const p of payments) {
-      await connection.execute(`INSERT INTO payments (id, orderId, method, amount) VALUES (?, ?, ?, ?)`,
-        [p.id, order.id, p.method, p.amount]);
+      await connection.execute(`INSERT INTO payments (id, orderId, method, amount, lastFour) VALUES (?, ?, ?, ?, ?)`,
+        [p.id, order.id, p.method, p.amount, p.lastFour || null]);
     }
 
     await connection.execute(`UPDATE counters SET val = val + 1 WHERE key_name = 'invoice'`);
@@ -1212,8 +1221,8 @@ app.put('/api/orders/:id', verifyRole(['admin', 'manager']), async (req, res) =>
     }
 
     for (const p of payments) {
-      await connection.execute(`INSERT INTO payments (id, orderId, method, amount) VALUES (?, ?, ?, ?)`,
-        [p.id, oid, p.method, p.amount]);
+      await connection.execute(`INSERT INTO payments (id, orderId, method, amount, lastFour) VALUES (?, ?, ?, ?, ?)`,
+        [p.id, oid, p.method, p.amount, p.lastFour || null]);
     }
 
     await connection.commit();
