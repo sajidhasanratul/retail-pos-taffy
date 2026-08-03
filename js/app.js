@@ -311,6 +311,18 @@
               </div>
               <div class="card-body" style="display:flex; flex-direction:column; gap:16px;">
                 <div class="form-group">
+                  <label class="form-label">Store Logo</label>
+                  <div style="display:flex; gap:12px; align-items:center; background:#f8fafc; padding:10px; border:1px solid var(--border); border-radius:var(--radius-sm);">
+                    <div id="set-logo-preview" style="width:60px; height:60px; border:1px solid var(--border); border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; overflow:hidden; background:#fff;">
+                      <span style="font-size:20px; color:#cbd5e1;">Logo</span>
+                    </div>
+                    <div style="flex:1; display:flex; flex-direction:column; gap:4px;">
+                      <input type="file" id="set-logo-file" accept="image/*" style="font-size:11px;">
+                      <input type="text" class="form-input" id="set-logo-url" placeholder="Or paste image URL..." style="height:28px; font-size:11px;">
+                    </div>
+                  </div>
+                </div>
+                <div class="form-group">
                   <label class="form-label">Store / Company Name</label>
                   <input type="text" class="form-input" id="set-store-name" value="Fetching...">
                 </div>
@@ -329,6 +341,16 @@
                 <div class="form-group">
                   <label class="form-label">Invoice / Receipt Footer Note</label>
                   <textarea class="form-input" id="set-invoice-note" rows="2" style="resize:vertical;" placeholder="e.g. Thank you for shopping with us!"></textarea>
+                </div>
+                <div class="form-group" style="display:flex; gap:10px;">
+                  <div style="flex:1;">
+                    <label class="form-label">Thermal Width (mm)</label>
+                    <input type="number" class="form-input" id="set-receipt-width" placeholder="e.g. 80" min="40" max="150">
+                  </div>
+                  <div style="flex:1;">
+                    <label class="form-label">Paper Width (px)</label>
+                    <input type="number" class="form-input" id="set-invoice-width" placeholder="e.g. 800" min="300" max="1500">
+                  </div>
                 </div>
                 <div class="form-group">
                   <label class="form-label">Default Print Format</label>
@@ -440,11 +462,49 @@
         `;
 
         const settings = await S.getSettings();
+        
+        let activeLogo = settings.invoice_logo || '';
+        const logoPreview = document.getElementById('set-logo-preview');
+        const logoUrlInput = document.getElementById('set-logo-url');
+        const logoFileInput = document.getElementById('set-logo-file');
+        
+        const updateLogoPreview = (src) => {
+          if (src) {
+            logoPreview.innerHTML = `<img src="${src}" style="width:100%; height:100%; object-fit:contain;">`;
+          } else {
+            logoPreview.innerHTML = `<span style="font-size:16px; color:#cbd5e1;">Logo</span>`;
+          }
+        };
+        
+        updateLogoPreview(activeLogo);
+        if (activeLogo && !activeLogo.startsWith('data:')) {
+          logoUrlInput.value = activeLogo;
+        }
+
+        logoFileInput.onchange = (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            activeLogo = reader.result;
+            updateLogoPreview(activeLogo);
+            logoUrlInput.value = '';
+          };
+          reader.readAsDataURL(file);
+        };
+
+        logoUrlInput.oninput = (e) => {
+          activeLogo = e.target.value.trim();
+          updateLogoPreview(activeLogo);
+        };
+
         document.getElementById('set-store-name').value = settings.store_name || '';
         document.getElementById('set-store-address').value = settings.store_address || '';
         document.getElementById('set-store-phone').value = settings.store_phone || '';
         document.getElementById('set-store-website').value = settings.store_website || '';
         document.getElementById('set-invoice-note').value = settings.invoice_note || '';
+        document.getElementById('set-receipt-width').value = settings.receipt_width || '80';
+        document.getElementById('set-invoice-width').value = settings.invoice_width || '800';
         document.getElementById('set-print-type').value = settings.default_print_type || 'receipt';
         document.getElementById('set-invoice-style').value = settings.invoice_style || 'theme-modern';
         document.getElementById('set-receipt-style').value = settings.receipt_style || 'style-1';
@@ -488,6 +548,8 @@
           const store_phone = document.getElementById('set-store-phone').value.trim();
           const store_website = document.getElementById('set-store-website').value.trim();
           const invoice_note = document.getElementById('set-invoice-note').value.trim();
+          const receipt_width = document.getElementById('set-receipt-width').value.trim();
+          const invoice_width = document.getElementById('set-invoice-width').value.trim();
           const default_print_type = document.getElementById('set-print-type').value;
           const invoice_style = document.getElementById('set-invoice-style').value;
           const receipt_style = document.getElementById('set-receipt-style').value;
@@ -519,6 +581,9 @@
             store_phone, 
             store_website,
             invoice_note,
+            invoice_logo: activeLogo,
+            receipt_width,
+            invoice_width,
             invoice_style, 
             default_print_type, 
             receipt_style,
