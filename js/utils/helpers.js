@@ -122,11 +122,12 @@
         <style>
           *{margin:0;padding:0;box-sizing:border-box}
           body{font-family:'Inter',sans-serif;padding:30px;color:#1e293b;font-size:13px}
-          body.receipt-body { padding: 10px; font-size: 11px; color: #000; }
-          body.receipt-body * { font-size: 11px; }
-          body.receipt-body h3 { font-size: 14px !important; }
-          body.receipt-body h4 { font-size: 12px !important; }
-          body.receipt-body table th, body.receipt-body table td { font-size: 10px !important; padding: 4px 2px; }
+          body.receipt-body { padding: 4px; font-size: 8pt; color: #000; line-height: 1.3; }
+          body.receipt-body * { font-size: 8pt; }
+          body.receipt-body h3 { font-size: 10pt !important; }
+          body.receipt-body h4 { font-size: 8.5pt !important; }
+          body.receipt-body small { font-size: 7.5pt !important; }
+          body.receipt-body table th, body.receipt-body table td { font-size: 7.5pt !important; padding: 2px 0; }
           table{width:100%;border-collapse:collapse;margin:12px 0}
           th,td{border:1px solid #cbd5e1;padding:8px 10px;text-align:left}
           th{background:#f1f5f9;font-weight:600}
@@ -408,6 +409,8 @@
           
           @media print {
             body { padding: 0 !important; }
+            body.receipt-body { padding: 1mm !important; }
+            body.receipt-body .thermal-receipt { width: 100% !important; max-width: 100% !important; }
             .product-label { border: none !important; }
             .paper-invoice { width: 100% !important; padding: 0 !important; margin: 0 !important; }
             thead { display: table-row-group !important; }
@@ -443,9 +446,9 @@
         items.forEach(item => {
           const varText = item.variationName ? ` (${this.esc(item.variationName)})` : '';
           itemsHtml += `
-            <div style="padding: 4px 0; border-bottom: 1px dashed #ddd; font-size: 11px;">
+            <div style="padding: 4px 0; border-bottom: 1px dashed #ddd; font-size: 8.5pt;">
               <div style="font-weight: 700; word-break: break-word;">${this.esc(item.productName)}${varText}</div>
-              <div style="display: flex; justify-content: space-between; font-size: 10px; color: #333; margin-top: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 8pt; color: #333; margin-top: 2px;">
                 <span>${item.qty} x ${this.formatCurrency(item.unitPrice)}</span>
                 <strong>${this.formatCurrency(item.total || (item.unitPrice * item.qty))}</strong>
               </div>
@@ -477,13 +480,13 @@
           <div class="thermal-receipt ${settings.receipt_style || 'style-1'}">
             <div style="text-align: center; margin-bottom: 8px;">
               ${settings.invoice_logo ? `<img src="${settings.invoice_logo}" style="max-width: 60px; max-height: 60px; object-fit: contain; margin-bottom: 6px; display: block; margin-left: auto; margin-right: auto;">` : ''}
-              ${storeName ? `<h3 style="margin:0; font-size:16px;">🏪 ${this.esc(storeName)}</h3>` : ''}
-              <p style="font-size:10px; margin: 2px 0 0 0;">${this.esc(storeAddress)}</p>
-              <p style="font-size:10px; margin: 1px 0 0 0;">Phone: ${this.esc(storePhone)}</p>
-              ${settings.store_website ? `<p style="font-size:10px; margin: 1px 0 0 0;">Website: ${this.esc(settings.store_website)}</p>` : ''}
+              ${storeName ? `<h3 style="margin:0; font-size:12pt;">🏪 ${this.esc(storeName)}</h3>` : ''}
+              <p style="font-size:8pt; margin: 2px 0 0 0;">${this.esc(storeAddress)}</p>
+              <p style="font-size:8pt; margin: 1px 0 0 0;">Phone: ${this.esc(storePhone)}</p>
+              ${settings.store_website ? `<p style="font-size:8pt; margin: 1px 0 0 0;">Website: ${this.esc(settings.store_website)}</p>` : ''}
             </div>
             <hr>
-            <div style="font-size: 10px; line-height: 1.4; margin-bottom: 6px;">
+            <div style="font-size: 8pt; line-height: 1.4; margin-bottom: 6px;">
               <div><strong>Invoice ID:</strong> ${order.invoiceId}</div>
               <div><strong>Customer:</strong> ${this.esc(order.customerName)} (${this.esc(order.customerPhone)})</div>
               <div><strong>Date:</strong> ${this.formatDateTime(order.date)}</div>
@@ -493,15 +496,15 @@
               ${itemsHtml}
             </div>
             
-            <div class="totals" style="font-size: 11px;">
+            <div class="totals" style="font-size: 8.5pt;">
               <p>Sub Total: <strong>${this.formatCurrency(order.subtotal)}</strong></p>
               ${order.discountAmount > 0 ? `<p>Discount: <strong style="color:#000">-${this.formatCurrency(order.discountAmount)}</strong></p>` : ''}
               ${order.taxAmount > 0 ? `<p>Tax (${order.taxPercent}%): <strong>${this.formatCurrency(order.taxAmount)}</strong></p>` : ''}
-              <p style="font-size:13px; font-weight:800; border-top:1px dashed #000; padding-top:4px; margin-top:4px;">Grand Total: <span>${this.formatCurrency(order.grandTotal)}</span></p>
+              <p style="font-size:10.5pt; font-weight:800; border-top:1px dashed #000; padding-top:4px; margin-top:4px;">Grand Total: <span>${this.formatCurrency(order.grandTotal)}</span></p>
             </div>
 
             ${paymentsList.length > 0 ? `
-              <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed #000; font-size: 10px; line-height: 1.4;">
+              <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed #000; font-size: 8pt; line-height: 1.4;">
                 <div style="font-weight: 700; margin-bottom: 2px;">Payment Details:</div>
                 ${paymentsList.map(p => `
                   <div style="display: flex; justify-content: space-between;">
@@ -513,11 +516,11 @@
             ` : ''}
             
             <hr>
-            <div style="text-align: center; margin-top: 15px; font-size: 10px;">
+            <div style="text-align: center; margin-top: 15px; font-size: 8pt;">
               ${settings.invoice_note ? `<p style="margin-bottom: 8px; font-style: italic; color:#333;">${this.esc(settings.invoice_note)}</p>` : ''}
               <p style="font-weight:700;">Thank you for shopping with us!</p>
-              ${settings.store_website ? `<p style="font-size: 9px; margin-top:4px; color:#555;">${this.esc(settings.store_website)}</p>` : ''}
-              <p style="font-size: 8px; margin-top:6px; color:#888;">Software by Zen IT</p>
+              ${settings.store_website ? `<p style="font-size: 8pt; margin-top:4px; color:#555;">${this.esc(settings.store_website)}</p>` : ''}
+              <p style="font-size: 7.5pt; margin-top:6px; color:#888;">Software by Zen IT</p>
             </div>
           </div>
         `;
