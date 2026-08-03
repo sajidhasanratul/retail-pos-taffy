@@ -322,6 +322,14 @@
                   <label class="form-label">Contact / Phone Number</label>
                   <input type="text" class="form-input" id="set-store-phone" value="Fetching...">
                 </div>
+                 <div class="form-group">
+                  <label class="form-label">Store Website URL</label>
+                  <input type="text" class="form-input" id="set-store-website" placeholder="e.g. www.myshop.com">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Invoice / Receipt Footer Note</label>
+                  <textarea class="form-input" id="set-invoice-note" rows="2" style="resize:vertical;" placeholder="e.g. Thank you for shopping with us!"></textarea>
+                </div>
                 <div class="form-group">
                   <label class="form-label">Default Print Format</label>
                   <select class="form-select" id="set-print-type">
@@ -435,6 +443,8 @@
         document.getElementById('set-store-name').value = settings.store_name || '';
         document.getElementById('set-store-address').value = settings.store_address || '';
         document.getElementById('set-store-phone').value = settings.store_phone || '';
+        document.getElementById('set-store-website').value = settings.store_website || '';
+        document.getElementById('set-invoice-note').value = settings.invoice_note || '';
         document.getElementById('set-print-type').value = settings.default_print_type || 'receipt';
         document.getElementById('set-invoice-style').value = settings.invoice_style || 'theme-modern';
         document.getElementById('set-receipt-style').value = settings.receipt_style || 'style-1';
@@ -476,6 +486,8 @@
           const store_name = document.getElementById('set-store-name').value.trim();
           const store_address = document.getElementById('set-store-address').value.trim();
           const store_phone = document.getElementById('set-store-phone').value.trim();
+          const store_website = document.getElementById('set-store-website').value.trim();
+          const invoice_note = document.getElementById('set-invoice-note').value.trim();
           const default_print_type = document.getElementById('set-print-type').value;
           const invoice_style = document.getElementById('set-invoice-style').value;
           const receipt_style = document.getElementById('set-receipt-style').value;
@@ -505,6 +517,8 @@
             store_name, 
             store_address, 
             store_phone, 
+            store_website,
+            invoice_note,
             invoice_style, 
             default_print_type, 
             receipt_style,
