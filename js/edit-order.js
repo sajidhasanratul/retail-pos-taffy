@@ -434,7 +434,7 @@
 
       // Add Payment splits
       document.getElementById('btn-add-payment').onclick = () => {
-        this.payments.push({ method: 'Cash', amount: 0 });
+        this.payments.push({ method: 'Cash', amount: 0, lastFour: '' });
         this.renderPayments();
         this.recalculate();
       };
@@ -620,6 +620,10 @@
               </select>
             </div>
             <div class="form-group">
+              <label class="form-label">Last 4 Digits</label>
+              <input type="text" class="form-input payment-lastfour-input" value="${p.lastFour || ''}" maxlength="4" placeholder="e.g. 1234">
+            </div>
+            <div class="form-group">
               <label class="form-label">Amount (৳)</label>
               <input type="number" class="form-input payment-amount-input" value="${p.amount}" min="0">
             </div>
@@ -636,6 +640,10 @@
 
         row.querySelector('.payment-method-select').onchange = (e) => {
           this.payments[idx].method = e.target.value;
+        };
+
+        row.querySelector('.payment-lastfour-input').oninput = (e) => {
+          this.payments[idx].lastFour = e.target.value.trim();
         };
 
         row.querySelector('.payment-amount-input').oninput = (e) => {
@@ -813,7 +821,8 @@
         id: 'pay_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
         orderId,
         method: p.method,
-        amount: p.amount
+        amount: p.amount,
+        lastFour: p.lastFour || null
       }));
 
       const result = await S.updateOrder(this.editOrderId, order, orderItemsList, orderPaymentsList);
@@ -821,7 +830,7 @@
       if (result.success) {
         H.showToast(`Order ${invoiceId} updated successfully!`);
         if (await H.confirm('Would you like to print the receipt?')) {
-          H.printOrder(order, this.cart);
+          H.printOrder(order, this.cart, orderPaymentsList);
         }
         POS.Router.navigate('/sales-list');
       } else {
