@@ -288,7 +288,7 @@
             max-width: ${settings.invoice_width || 800}px;
             margin: 0 auto;
             color: #1e293b;
-            padding: 10px;
+            padding: 0.3in 10px;
           }
           .paper-invoice .invoice-top {
             display: flex;
@@ -444,17 +444,31 @@
 
       let itemsHtml = '';
       if (printType === 'receipt') {
+        const isStyle3 = settings.receipt_style === 'style-3';
         items.forEach(item => {
           const varText = item.variationName ? ` (${this.esc(item.variationName)})` : '';
-          itemsHtml += `
-            <div class="receipt-item-row" style="padding: 4px 0; border-bottom: 1px dashed #ddd; font-size: 8.5pt;">
-              <div class="receipt-item-name" style="font-weight: 700; word-break: break-word;">${this.esc(item.productName)}${varText}</div>
-              <div class="receipt-item-details" style="display: flex; justify-content: space-between; font-size: 8pt; color: #333; margin-top: 2px;">
-                <span>${item.qty} x ${this.formatCurrency(item.unitPrice)}</span>
-                <strong>${this.formatCurrency(item.total || (item.unitPrice * item.qty))}</strong>
+          if (isStyle3) {
+            // Tabular Grid Layout
+            itemsHtml += `
+              <div class="receipt-item-row" style="display: grid; grid-template-columns: 1.5fr 30px 65px 75px; gap: 4px; padding: 5px 0; font-size: 8.5pt; text-align: right; align-items: center;">
+                <span class="receipt-item-name" style="text-align: left; font-weight: 700; word-break: break-word;">${this.esc(item.productName)}${varText}</span>
+                <span class="receipt-item-qty" style="text-align: center; color: #475569;">${item.qty}</span>
+                <span class="receipt-item-price" style="color: #475569;">${this.formatCurrency(item.unitPrice)}</span>
+                <strong class="receipt-item-total" style="color: #0f172a;">${this.formatCurrency(item.total || (item.unitPrice * item.qty))}</strong>
               </div>
-            </div>
-          `;
+            `;
+          } else {
+            // Block Layout for Style 1 & 2
+            itemsHtml += `
+              <div class="receipt-item-row" style="padding: 4px 0; border-bottom: 1px dashed #ddd; font-size: 8.5pt;">
+                <div class="receipt-item-name" style="font-weight: 700; word-break: break-word;">${this.esc(item.productName)}${varText}</div>
+                <div class="receipt-item-details" style="display: flex; justify-content: space-between; font-size: 8pt; color: #333; margin-top: 2px;">
+                  <span>${item.qty} x ${this.formatCurrency(item.unitPrice)}</span>
+                  <strong>${this.formatCurrency(item.total || (item.unitPrice * item.qty))}</strong>
+                </div>
+              </div>
+            `;
+          }
         });
       } else {
         items.forEach(item => {
@@ -482,7 +496,7 @@
           <div class="thermal-receipt ${settings.receipt_style || 'style-1'}">
             <div style="text-align: center; margin-bottom: 8px;">
               ${settings.invoice_logo ? `<img src="${settings.invoice_logo}" style="max-width: 60px; max-height: 60px; object-fit: contain; margin-bottom: 6px; display: block; margin-left: auto; margin-right: auto;">` : ''}
-              ${storeName ? `<h3 style="margin:0; font-size:12pt;">🏪 ${this.esc(storeName)}</h3>` : ''}
+              ${storeName ? `<h3 style="margin:0; font-size:12pt;">${this.esc(storeName)}</h3>` : ''}
               <p style="font-size:8pt; margin: 2px 0 0 0;">${this.esc(storeAddress)}</p>
               <p style="font-size:8pt; margin: 1px 0 0 0;">Phone: ${this.esc(storePhone)}</p>
               ${settings.store_website ? `<p style="font-size:8pt; margin: 1px 0 0 0;">Website: ${this.esc(settings.store_website)}</p>` : ''}
@@ -495,6 +509,14 @@
             </div>
             <hr>
             <div style="margin: 6px 0;">
+              ${settings.receipt_style === 'style-3' ? `
+                <div style="display: grid; grid-template-columns: 1.5fr 30px 65px 75px; gap: 4px; padding: 4px 0; border-bottom: 2px solid #475569; font-size: 8pt; font-weight: 700; text-align: right; text-transform: uppercase; color: #475569; margin-bottom: 4px;">
+                  <span style="text-align: left;">Item Description</span>
+                  <span style="text-align: center;">Qty</span>
+                  <span>Price</span>
+                  <span>Total</span>
+                </div>
+              ` : ''}
               ${itemsHtml}
             </div>
             
@@ -534,7 +556,7 @@
               <div class="store-details" style="display:flex; align-items:center; gap:16px;">
                 ${settings.invoice_logo ? `<img src="${settings.invoice_logo}" style="max-width: 80px; max-height: 80px; object-fit: contain; border-radius: 4px;">` : ''}
                 <div>
-                  ${storeName ? `<h2 style="margin:0;">🏬 ${this.esc(storeName)}</h2>` : ''}
+                  ${storeName ? `<h2 style="margin:0;">${this.esc(storeName)}</h2>` : ''}
                   <p style="margin:2px 0 0 0; font-size:12px; color:#64748b;">${this.esc(storeAddress)}</p>
                   <p style="margin:1px 0 0 0; font-size:12px; color:#64748b;"><strong>Phone:</strong> ${this.esc(storePhone)}</p>
                   ${settings.store_website ? `<p style="margin:1px 0 0 0; font-size:12px; color:#64748b;"><strong>Website:</strong> ${this.esc(settings.store_website)}</p>` : ''}
