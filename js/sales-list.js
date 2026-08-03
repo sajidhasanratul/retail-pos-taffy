@@ -275,9 +275,10 @@
 
       let paymentsHtml = '';
       payments.forEach(p => {
+        const suffix = (p.lastFour || p.lastfour) ? ` (xxxx-${p.lastFour || p.lastfour})` : '';
         paymentsHtml += `
           <div class="flex justify-between text-sm" style="border-bottom:1px solid var(--border-light); padding:4px 0;">
-            <span class="text-muted">${p.method}</span>
+            <span class="text-muted">${p.method}${suffix}</span>
             <span style="font-weight:600;">${H.formatCurrency(p.amount)}</span>
           </div>
         `;
