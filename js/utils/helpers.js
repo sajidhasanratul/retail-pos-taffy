@@ -112,15 +112,21 @@
       return list;
     },
 
-    /* ── Print ─────────────────────────────────────── */
     printHTML(html, title, settings = {}) {
       const w = window.open('', '_blank', 'width=800,height=600');
+      const isReceipt = settings.default_print_type === 'receipt';
+      const bodyClass = isReceipt ? 'receipt-body' : 'paper-body';
       w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
         <title>${title || 'Print'}</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Libre+Barcode+39&display=swap" rel="stylesheet">
         <style>
           *{margin:0;padding:0;box-sizing:border-box}
           body{font-family:'Inter',sans-serif;padding:30px;color:#1e293b;font-size:13px}
+          body.receipt-body { padding: 10px; font-size: 11px; color: #000; }
+          body.receipt-body * { font-size: 11px; }
+          body.receipt-body h3 { font-size: 14px !important; }
+          body.receipt-body h4 { font-size: 12px !important; }
+          body.receipt-body table th, body.receipt-body table td { font-size: 10px !important; padding: 4px 2px; }
           table{width:100%;border-collapse:collapse;margin:12px 0}
           th,td{border:1px solid #cbd5e1;padding:8px 10px;text-align:left}
           th{background:#f1f5f9;font-weight:600}
@@ -401,12 +407,14 @@
           }
           
           @media print {
-            body { padding: 0 !important; }
+            @page { margin: 0; }
+            body { padding: 0 !important; margin: 0 !important; }
+            body.receipt-body { padding: 4mm !important; }
             .product-label { border: none !important; }
             .paper-invoice { width: 100% !important; padding: 0 !important; margin: 0 !important; }
             thead { display: table-row-group !important; }
           }
-        </style></head><body>${html}</body></html>`);
+        </style></head><body class="${bodyClass}">${html}</body></html>`);
       w.document.close();
       setTimeout(() => { w.print(); }, 400);
     },
@@ -444,7 +452,7 @@
         `;
       });
 
-      const storeName = settings.store_name || 'ZenPos Store';
+      const storeName = (settings.store_name || '').trim();
       const storeAddress = settings.store_address || '';
       const storePhone = settings.store_phone || '';
 
@@ -456,7 +464,7 @@
           <div class="thermal-receipt ${settings.receipt_style || 'style-1'}">
             <div style="text-align: center; margin-bottom: 8px;">
               ${settings.invoice_logo ? `<img src="${settings.invoice_logo}" style="max-width: 60px; max-height: 60px; object-fit: contain; margin-bottom: 6px; display: block; margin-left: auto; margin-right: auto;">` : ''}
-              <h3 style="margin:0; font-size:16px;">🏪 ${this.esc(storeName)}</h3>
+              ${storeName ? `<h3 style="margin:0; font-size:16px;">🏪 ${this.esc(storeName)}</h3>` : ''}
               <p style="font-size:10px; margin: 2px 0 0 0;">${this.esc(storeAddress)}</p>
               <p style="font-size:10px; margin: 1px 0 0 0;">Phone: ${this.esc(storePhone)}</p>
               ${settings.store_website ? `<p style="font-size:10px; margin: 1px 0 0 0;">Website: ${this.esc(settings.store_website)}</p>` : ''}
@@ -494,7 +502,7 @@
                 <div style="font-weight: 700; margin-bottom: 2px;">Payment Details:</div>
                 ${paymentsList.map(p => `
                   <div style="display: flex; justify-content: space-between;">
-                    <span>• ${this.esc(p.method)}${p.lastFour ? ` (xxxx-${p.lastFour})` : ''}</span>
+                    <span>• ${this.esc(p.method)}${(p.lastFour || p.lastfour) ? ` (xxxx-${p.lastFour || p.lastfour})` : ''}</span>
                     <strong>${this.formatCurrency(p.amount)}</strong>
                   </div>
                 `).join('')}
@@ -518,7 +526,7 @@
               <div class="store-details" style="display:flex; align-items:center; gap:16px;">
                 ${settings.invoice_logo ? `<img src="${settings.invoice_logo}" style="max-width: 80px; max-height: 80px; object-fit: contain; border-radius: 4px;">` : ''}
                 <div>
-                  <h2 style="margin:0;">🏬 ${this.esc(storeName)}</h2>
+                  ${storeName ? `<h2 style="margin:0;">🏬 ${this.esc(storeName)}</h2>` : ''}
                   <p style="margin:2px 0 0 0; font-size:12px; color:#64748b;">${this.esc(storeAddress)}</p>
                   <p style="margin:1px 0 0 0; font-size:12px; color:#64748b;"><strong>Phone:</strong> ${this.esc(storePhone)}</p>
                   ${settings.store_website ? `<p style="margin:1px 0 0 0; font-size:12px; color:#64748b;"><strong>Website:</strong> ${this.esc(settings.store_website)}</p>` : ''}
@@ -586,7 +594,7 @@
                     <div style="font-weight:700; color:#475569; margin-bottom:4px;">Payment Method:</div>
                     ${paymentsList.map(p => `
                       <div class="totals-row" style="border:none; padding:2px 0;">
-                        <span>• ${this.esc(p.method)}${p.lastFour ? ` (xxxx-${p.lastFour})` : ''}</span>
+                        <span>• ${this.esc(p.method)}${(p.lastFour || p.lastfour) ? ` (xxxx-${p.lastFour || p.lastfour})` : ''}</span>
                         <strong>${this.formatCurrency(p.amount)}</strong>
                       </div>
                     `).join('')}
