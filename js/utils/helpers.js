@@ -122,7 +122,7 @@
         <style>
           *{margin:0;padding:0;box-sizing:border-box}
           body{font-family:'Inter',sans-serif;padding:30px;color:#1e293b;font-size:13px}
-          body.receipt-body { padding: 20px 4px; font-size: 8pt; color: #000; line-height: 1.3; }
+          body.receipt-body { padding: 4px; font-size: 8pt; color: #000; line-height: 1.3; }
           body.receipt-body * { font-size: 8pt; }
           body.receipt-body h3 { font-size: 10pt !important; }
           body.receipt-body h4 { font-size: 8.5pt !important; }
@@ -410,7 +410,7 @@
           
           @media print {
             body { padding: 0 !important; }
-            body.receipt-body { padding: 6mm 1mm !important; }
+            body.receipt-body { padding: 1mm !important; }
             body.receipt-body .thermal-receipt { width: 100% !important; max-width: 100% !important; }
             .product-label { border: none !important; }
             .paper-invoice { width: 100% !important; padding: 0 !important; margin: 0 !important; }
@@ -494,6 +494,7 @@
         // Thermal Receipt layout
         printContent = `
           <div class="thermal-receipt ${settings.receipt_style || 'style-1'}">
+            <hr style="margin-top: 0; margin-bottom: 8px;">
             <div style="text-align: center; margin-bottom: 8px;">
               ${settings.invoice_logo ? `<img src="${settings.invoice_logo}" style="max-width: 60px; max-height: 60px; object-fit: contain; margin-bottom: 6px; display: block; margin-left: auto; margin-right: auto;">` : ''}
               ${storeName ? `<h3 style="margin:0; font-size:12pt;">${this.esc(storeName)}</h3>` : ''}
