@@ -671,6 +671,9 @@ app.get('/api/settings', async (req, res) => {
 app.put('/api/settings', verifyRole(['admin', 'manager']), async (req, res) => {
   try {
     const settings = req.body;
+    console.log('--- UPDATING SYSTEM SETTINGS ---');
+    console.log(settings);
+    console.log('--------------------------------');
     for (const [key, val] of Object.entries(settings)) {
       if (val !== undefined) {
         await dbQuery(`INSERT INTO settings (key_name, val) VALUES (?, ?) ON DUPLICATE KEY UPDATE val = ?`, [key, String(val), String(val)]);
