@@ -167,7 +167,8 @@ const initDB = async () => {
     id VARCHAR(50) PRIMARY KEY,
     orderId VARCHAR(50),
     method VARCHAR(50) NOT NULL,
-    amount DECIMAL(12,2) NOT NULL
+    amount DECIMAL(12,2) NOT NULL,
+    lastFour VARCHAR(10) DEFAULT NULL
   )`);
 
   await dbQuery(`CREATE TABLE IF NOT EXISTS counters (
@@ -400,6 +401,16 @@ const initDB = async () => {
   const prods = await dbQuery(`SELECT count(*) as count FROM products`);
   if (prods[0].count === 0) {
     await seedCatalog();
+  }
+
+  // Verify and log payments table schema on startup
+  try {
+    const columns = await dbQuery(`DESCRIBE payments`);
+    console.log('=== PAYMENTS SCHEMA DIAGNOSTICS ===');
+    console.log(columns);
+    console.log('===================================');
+  } catch (schemaErr) {
+    console.warn('Could not query payments table structure:', schemaErr.message);
   }
 };
 
@@ -1165,7 +1176,7 @@ app.post('/api/orders', async (req, res) => {
 
     for (const p of payments) {
       await connection.execute(`INSERT INTO payments (id, orderId, method, amount, lastFour) VALUES (?, ?, ?, ?, ?)`,
-        [p.id, order.id, p.method, p.amount, p.lastFour || null]);
+        [p.id, order.id, p.method, p.amount, p.lastFour || p.lastfour || null]);
     }
 
     await connection.execute(`UPDATE counters SET val = val + 1 WHERE key_name = 'invoice'`);
@@ -1228,7 +1239,7 @@ app.put('/api/orders/:id', verifyRole(['admin', 'manager']), async (req, res) =>
 
     for (const p of payments) {
       await connection.execute(`INSERT INTO payments (id, orderId, method, amount, lastFour) VALUES (?, ?, ?, ?, ?)`,
-        [p.id, oid, p.method, p.amount, p.lastFour || null]);
+        [p.id, oid, p.method, p.amount, p.lastFour || p.lastfour || null]);
     }
 
     await connection.commit();
