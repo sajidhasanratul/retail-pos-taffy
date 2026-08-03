@@ -657,6 +657,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
 // ── Settings Endpoints ───────────────────────────
 app.get('/api/settings', async (req, res) => {
   try {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     const rows = await dbQuery(`SELECT * FROM settings`);
     const settings = {};
     rows.forEach(r => {
