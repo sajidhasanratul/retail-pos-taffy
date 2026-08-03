@@ -325,6 +325,9 @@
                 <div class="form-group">
                   <label class="form-label">Store / Company Name</label>
                   <input type="text" class="form-input" id="set-store-name" value="Fetching...">
+                                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin-top:8px; font-size:12px; color:var(--text-secondary);">
+                    <input type="checkbox" id="set-chk-invoice-show-store-name" checked> Show Store Name on Invoices / Receipts
+                  </label>
                 </div>
                 <div class="form-group">
                   <label class="form-label">Store Address</label>
