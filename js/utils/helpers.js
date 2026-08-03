@@ -404,6 +404,7 @@
             body { padding: 0 !important; }
             .product-label { border: none !important; }
             .paper-invoice { width: 100% !important; padding: 0 !important; margin: 0 !important; }
+                    thead { display: table-row-group !important; }
           }
         </style></head><body>${html}</body></html>`);
       w.document.close();
