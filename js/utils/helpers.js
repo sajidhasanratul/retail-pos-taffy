@@ -404,17 +404,33 @@
             body { padding: 0 !important; }
             .product-label { border: none !important; }
             .paper-invoice { width: 100% !important; padding: 0 !important; margin: 0 !important; }
-                    thead { display: table-row-group !important; }
+            thead { display: table-row-group !important; }
           }
         </style></head><body>${html}</body></html>`);
       w.document.close();
       setTimeout(() => { w.print(); }, 400);
     },
 
-    async printOrder(order, items) {
+    async printOrder(order, items, localPayments = null) {
       const S = POS.Store;
       const settings = await S.getSettings();
       const printType = settings.default_print_type || 'receipt';
+
+      let paymentsList = localPayments;
+      if (!paymentsList) {
+        try {
+          const pRes = await fetch(`${window.location.origin}/api/payments`, {
+            headers: S.getHeaders()
+          });
+          if (pRes.ok) {
+            const allP = await pRes.json();
+            paymentsList = allP.filter(p => p.orderId === order.id);
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+      if (!paymentsList) paymentsList = [];
 
       let itemsHtml = '';
       items.forEach(item => {
@@ -442,6 +458,7 @@
               <h3 style="margin:0; font-size:16px;">🏪 ${this.esc(storeName)}</h3>
               <p style="font-size:10px; margin: 2px 0 0 0;">${this.esc(storeAddress)}</p>
               <p style="font-size:10px; margin: 1px 0 0 0;">Phone: ${this.esc(storePhone)}</p>
+              ${settings.store_website ? `<p style="font-size:10px; margin: 1px 0 0 0;">Website: ${this.esc(settings.store_website)}</p>` : ''}
             </div>
             <hr>
             <div style="font-size: 10px; line-height: 1.4; margin-bottom: 6px;">
@@ -471,10 +488,25 @@
               <p style="font-size:13px; font-weight:800; border-top:1px dashed #000; padding-top:4px; margin-top:4px;">Grand Total: <span>${this.formatCurrency(order.grandTotal)}</span></p>
               <p>Paid Amount: <strong>${this.formatCurrency(order.paidAmount)}</strong></p>
             </div>
+
+            ${paymentsList.length > 0 ? `
+              <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed #000; font-size: 10px; line-height: 1.4;">
+                <div style="font-weight: 700; margin-bottom: 2px;">Payment Details:</div>
+                ${paymentsList.map(p => `
+                  <div style="display: flex; justify-content: space-between;">
+                    <span>• ${this.esc(p.method)}${p.lastFour ? ` (xxxx-${p.lastFour})` : ''}</span>
+                    <strong>${this.formatCurrency(p.amount)}</strong>
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
             
-            <div style="text-align: center; margin-top: 25px; font-size: 10px;">
-              <p>Thank you for shopping with us!</p>
-              <p style="font-size: 9px; margin-top:4px; color:#555;">Software by Zen IT</p>
+            <hr>
+            <div style="text-align: center; margin-top: 15px; font-size: 10px;">
+              ${settings.invoice_note ? `<p style="margin-bottom: 8px; font-style: italic; color:#333;">${this.esc(settings.invoice_note)}</p>` : ''}
+              <p style="font-weight:700;">Thank you for shopping with us!</p>
+              ${settings.store_website ? `<p style="font-size: 9px; margin-top:4px; color:#555;">${this.esc(settings.store_website)}</p>` : ''}
+              <p style="font-size: 8px; margin-top:6px; color:#888;">Software by Zen IT</p>
             </div>
           </div>
         `;
@@ -487,6 +519,7 @@
                 <h2>🏬 ${this.esc(storeName)}</h2>
                 <p>${this.esc(storeAddress)}</p>
                 <p><strong>Phone:</strong> ${this.esc(storePhone)}</p>
+                ${settings.store_website ? `<p><strong>Website:</strong> ${this.esc(settings.store_website)}</p>` : ''}
               </div>
               <div class="invoice-meta">
                 <h1>RETAIL INVOICE</h1>
@@ -517,10 +550,11 @@
 
             <div class="invoice-bottom">
               <div class="notes-area">
-                <p style="font-weight:700; margin-bottom:4px; color:var(--text-dark);">Terms & Conditions</p>
-                <p>1. Goods once sold cannot be returned or exchanged.</p>
-                <p>2. Keep this invoice safe for any warranty claims.</p>
-                <p>3. Software owner Zen IT - zenit.com</p>
+                <p style="font-weight:700; margin-bottom:4px; color:var(--text-dark);">Terms & Conditions / Note</p>
+                ${settings.invoice_note ? `<p style="white-space: pre-line; line-height: 1.5; color: #555;">${this.esc(settings.invoice_note)}</p>` : '<p>1. Goods once sold cannot be returned or exchanged.</p><p>2. Keep this invoice safe for any warranty claims.</p>'}
+                <div style="margin-top: 15px; font-size: 11px; color:#475569;">
+                  ${settings.store_website ? `<p>Website: <strong>${this.esc(settings.store_website)}</strong></p>` : ''}
+                </div>
               </div>
               <div class="totals-area">
                 <div class="totals-row">
@@ -547,6 +581,18 @@
                   <span>Paid Amount:</span>
                   <strong>${this.formatCurrency(order.paidAmount)}</strong>
                 </div>
+
+                ${paymentsList.length > 0 ? `
+                  <div style="margin-top:12px; border-top:1px dashed #cbd5e1; padding-top:8px; font-size:11px;">
+                    <div style="font-weight:700; color:#475569; margin-bottom:4px;">Payment Method:</div>
+                    ${paymentsList.map(p => `
+                      <div class="totals-row" style="border:none; padding:2px 0;">
+                        <span>• ${this.esc(p.method)}${p.lastFour ? ` (xxxx-${p.lastFour})` : ''}</span>
+                        <strong>${this.formatCurrency(p.amount)}</strong>
+                      </div>
+                    `).join('')}
+                  </div>
+                ` : ''}
               </div>
             </div>
 
