@@ -152,91 +152,92 @@
           }
           
           /* Style 1: Standard Minimalist (Default) */
-          .thermal-receipt.style-1 th, .thermal-receipt.style-1 td {
-            border: none;
-            border-bottom: 1px dashed #ccc;
-            padding: 5px 2px;
-            font-size: 11px;
-            background: none !important;
-          }
-          .thermal-receipt.style-1 th {
-            border-bottom: 2px dashed #000;
-            font-weight: 700;
-            text-transform: uppercase;
-          }
           .thermal-receipt.style-1 hr {
             border: none;
             border-top: 1px dashed #000;
-            margin: 10px 0;
+            margin: 8px 0;
           }
           .thermal-receipt.style-1 .totals {
-            margin-top: 10px;
-            border-top: 2px dashed #000;
-            padding-top: 8px;
-            text-align: right;
+            margin-top: 8px;
+            border-top: 1px dashed #000;
+            padding-top: 6px;
+          }
+          .thermal-receipt.style-1 .totals p {
+            margin: 3px 0;
+            display: flex;
+            justify-content: space-between;
           }
           
-          /* Style 2: Classic Bordered (Compact) */
+          /* Style 2: Classic Bordered (Courier Monospace / Retro Cash Register) */
           .thermal-receipt.style-2 {
-            border: 2px solid #000;
-            padding: 8px;
-          }
-          .thermal-receipt.style-2 th, .thermal-receipt.style-2 td {
+            font-family: 'Courier New', Courier, monospace !important;
             border: 1px solid #000;
-            padding: 5px;
-            font-size: 11px;
-            background: none !important;
+            padding: 8px;
+            color: #000;
           }
-          .thermal-receipt.style-2 th {
-            font-weight: 700;
-            background: #f1f5f9 !important;
+          .thermal-receipt.style-2 * {
+            font-family: 'Courier New', Courier, monospace !important;
+            color: #000 !important;
           }
           .thermal-receipt.style-2 hr {
             border: none;
-            border-top: 1px solid #000;
+            border-top: 1px solid #000 !important;
             margin: 8px 0;
+          }
+          .thermal-receipt.style-2 .receipt-item-row {
+            border-bottom: 1px solid #000 !important;
+            padding: 5px 0 !important;
+          }
+          .thermal-receipt.style-2 .receipt-item-name {
+            font-weight: bold !important;
           }
           .thermal-receipt.style-2 .totals {
             margin-top: 8px;
-            border-top: 1px solid #000;
+            border-top: 1px solid #000 !important;
             padding-top: 6px;
-            text-align: right;
+          }
+          .thermal-receipt.style-2 .totals p {
+            margin: 4px 0;
+            display: flex;
+            justify-content: space-between;
           }
 
-          /* Style 3: Modern Elegant (Centered Header) */
+          /* Style 3: Modern Elegant (Centered & Premium Shaded Totals) */
           .thermal-receipt.style-3 {
-            text-align: center;
-          }
-          .thermal-receipt.style-3 table {
-            text-align: center;
-          }
-          .thermal-receipt.style-3 th, .thermal-receipt.style-3 td {
-            border: none;
-            border-bottom: 1px solid #ddd;
-            padding: 6px 3px;
-            font-size: 11px;
-            text-align: center;
-          }
-          .thermal-receipt.style-3 th:first-child, .thermal-receipt.style-3 td:first-child {
-            text-align: left;
-          }
-          .thermal-receipt.style-3 th:last-child, .thermal-receipt.style-3 td:last-child {
-            text-align: right;
-          }
-          .thermal-receipt.style-3 th {
-            border-bottom: 2px solid #000;
-            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            color: #1e293b;
           }
           .thermal-receipt.style-3 hr {
             border: none;
-            border-top: 2px double #000;
+            border-top: 1px double #475569 !important;
             margin: 10px 0;
+          }
+          .thermal-receipt.style-3 .receipt-item-row {
+            border-bottom: 1px solid #e2e8f0 !important;
+            padding: 6px 0 !important;
+          }
+          .thermal-receipt.style-3 .receipt-item-name {
+            color: #0f172a !important;
+            font-weight: 700;
+          }
+          .thermal-receipt.style-3 .receipt-item-details {
+            color: #64748b !important;
+            margin-top: 3px !important;
           }
           .thermal-receipt.style-3 .totals {
             margin-top: 10px;
-            border-top: 2px double #000;
-            padding-top: 8px;
-            text-align: right;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc !important;
+            padding: 8px;
+            border-radius: 6px;
+          }
+          .thermal-receipt.style-3 .totals p {
+            margin: 4px 0;
+            display: flex;
+            justify-content: space-between;
+          }
+          .thermal-receipt.style-3 .totals p strong {
+            font-weight: 700;
           }
           
           .thermal-receipt .totals p {
@@ -446,9 +447,9 @@
         items.forEach(item => {
           const varText = item.variationName ? ` (${this.esc(item.variationName)})` : '';
           itemsHtml += `
-            <div style="padding: 4px 0; border-bottom: 1px dashed #ddd; font-size: 8.5pt;">
-              <div style="font-weight: 700; word-break: break-word;">${this.esc(item.productName)}${varText}</div>
-              <div style="display: flex; justify-content: space-between; font-size: 8pt; color: #333; margin-top: 2px;">
+            <div class="receipt-item-row" style="padding: 4px 0; border-bottom: 1px dashed #ddd; font-size: 8.5pt;">
+              <div class="receipt-item-name" style="font-weight: 700; word-break: break-word;">${this.esc(item.productName)}${varText}</div>
+              <div class="receipt-item-details" style="display: flex; justify-content: space-between; font-size: 8pt; color: #333; margin-top: 2px;">
                 <span>${item.qty} x ${this.formatCurrency(item.unitPrice)}</span>
                 <strong>${this.formatCurrency(item.total || (item.unitPrice * item.qty))}</strong>
               </div>
