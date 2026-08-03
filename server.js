@@ -304,6 +304,7 @@ const initDB = async () => {
     await dbQuery(`INSERT INTO settings (key_name, val) VALUES 
       ('store_name', 'ZenPos Store'),
       ('store_address', '123 Market Street, Dhaka'),
+      ('invoice_show_store_name', '1'),
       ('store_phone', '01700000000'),
       ('store_website', 'www.zenpos.com'),
       ('invoice_note', 'Goods once sold cannot be returned or exchanged.'),
@@ -327,6 +328,7 @@ const initDB = async () => {
       ('label_show_attribs', '0')`);
   } else {
     const defaultLabelKeys = {
+      'invoice_show_store_name': '1',
       'store_website': 'www.zenpos.com',
       'invoice_note': 'Goods once sold cannot be returned or exchanged.',
       'invoice_logo': '',
