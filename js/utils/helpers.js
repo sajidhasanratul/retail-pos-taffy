@@ -113,7 +113,7 @@
     },
 
     /* ── Print ─────────────────────────────────────── */
-    printHTML(html, title) {
+    printHTML(html, title, settings = {}) {
       const w = window.open('', '_blank', 'width=800,height=600');
       w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
         <title>${title || 'Print'}</title>
@@ -132,7 +132,7 @@
           /* Thermal Receipt Printer CSS */
           /* Thermal Receipt Printer CSS */
           .thermal-receipt {
-            max-width: 80mm;
+            max-width: ${settings.receipt_width || 80}mm;
             margin: 0 auto;
             color: #000;
             font-family: 'Inter', sans-serif;
@@ -277,7 +277,7 @@
           
           /* Paper Invoice CSS styles */
           .paper-invoice {
-            max-width: 800px;
+            max-width: ${settings.invoice_width || 800}px;
             margin: 0 auto;
             color: #1e293b;
             padding: 10px;
@@ -455,6 +455,7 @@
         printContent = `
           <div class="thermal-receipt ${settings.receipt_style || 'style-1'}">
             <div style="text-align: center; margin-bottom: 8px;">
+              ${settings.invoice_logo ? `<img src="${settings.invoice_logo}" style="max-width: 60px; max-height: 60px; object-fit: contain; margin-bottom: 6px; display: block; margin-left: auto; margin-right: auto;">` : ''}
               <h3 style="margin:0; font-size:16px;">🏪 ${this.esc(storeName)}</h3>
               <p style="font-size:10px; margin: 2px 0 0 0;">${this.esc(storeAddress)}</p>
               <p style="font-size:10px; margin: 1px 0 0 0;">Phone: ${this.esc(storePhone)}</p>
@@ -486,7 +487,6 @@
               ${order.discountAmount > 0 ? `<p>Discount: <strong style="color:#000">-${this.formatCurrency(order.discountAmount)}</strong></p>` : ''}
               ${order.taxAmount > 0 ? `<p>Tax (${order.taxPercent}%): <strong>${this.formatCurrency(order.taxAmount)}</strong></p>` : ''}
               <p style="font-size:13px; font-weight:800; border-top:1px dashed #000; padding-top:4px; margin-top:4px;">Grand Total: <span>${this.formatCurrency(order.grandTotal)}</span></p>
-              <p>Paid Amount: <strong>${this.formatCurrency(order.paidAmount)}</strong></p>
             </div>
 
             ${paymentsList.length > 0 ? `
@@ -515,11 +515,14 @@
         printContent = `
           <div class="paper-invoice ${settings.invoice_style || 'theme-modern'}">
             <div class="invoice-top">
-              <div class="store-details">
-                <h2>🏬 ${this.esc(storeName)}</h2>
-                <p>${this.esc(storeAddress)}</p>
-                <p><strong>Phone:</strong> ${this.esc(storePhone)}</p>
-                ${settings.store_website ? `<p><strong>Website:</strong> ${this.esc(settings.store_website)}</p>` : ''}
+              <div class="store-details" style="display:flex; align-items:center; gap:16px;">
+                ${settings.invoice_logo ? `<img src="${settings.invoice_logo}" style="max-width: 80px; max-height: 80px; object-fit: contain; border-radius: 4px;">` : ''}
+                <div>
+                  <h2 style="margin:0;">🏬 ${this.esc(storeName)}</h2>
+                  <p style="margin:2px 0 0 0; font-size:12px; color:#64748b;">${this.esc(storeAddress)}</p>
+                  <p style="margin:1px 0 0 0; font-size:12px; color:#64748b;"><strong>Phone:</strong> ${this.esc(storePhone)}</p>
+                  ${settings.store_website ? `<p style="margin:1px 0 0 0; font-size:12px; color:#64748b;"><strong>Website:</strong> ${this.esc(settings.store_website)}</p>` : ''}
+                </div>
               </div>
               <div class="invoice-meta">
                 <h1>RETAIL INVOICE</h1>
@@ -577,10 +580,6 @@
                   <span>Grand Total:</span>
                   <strong>${this.formatCurrency(order.grandTotal)}</strong>
                 </div>
-                <div class="totals-row paid">
-                  <span>Paid Amount:</span>
-                  <strong>${this.formatCurrency(order.paidAmount)}</strong>
-                </div>
 
                 ${paymentsList.length > 0 ? `
                   <div style="margin-top:12px; border-top:1px dashed #cbd5e1; padding-top:8px; font-size:11px;">
@@ -608,7 +607,7 @@
         `;
       }
 
-      this.printHTML(printContent, `Invoice ${order.invoiceId}`);
+      this.printHTML(printContent, `Invoice ${order.invoiceId}`, settings);
     },
 
     /* ── Toast Notification ────────────────────────── */
