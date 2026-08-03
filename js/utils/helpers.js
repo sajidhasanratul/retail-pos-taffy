@@ -468,7 +468,8 @@
         });
       }
 
-      const storeName = (settings.store_name || '').trim();
+      const showStoreName = settings.invoice_show_store_name !== '0';
+      const storeName = showStoreName ? (settings.store_name || '').trim() : '';
       const storeAddress = settings.store_address || '';
       const storePhone = settings.store_phone || '';
 
