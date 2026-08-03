@@ -122,7 +122,7 @@
         <style>
           *{margin:0;padding:0;box-sizing:border-box}
           body{font-family:'Inter',sans-serif;padding:30px;color:#1e293b;font-size:13px}
-          body.receipt-body { padding: 2px; font-size: 11px; color: #000; }
+          body.receipt-body { padding: 10px; font-size: 11px; color: #000; }
           body.receipt-body * { font-size: 11px; }
           body.receipt-body h3 { font-size: 14px !important; }
           body.receipt-body h4 { font-size: 12px !important; }
@@ -407,9 +407,7 @@
           }
           
           @media print {
-            @page { margin: 0; }
-            body { padding: 0 !important; margin: 0 !important; }
-            body.receipt-body { padding: 1mm !important; }
+            body { padding: 0 !important; }
             .product-label { border: none !important; }
             .paper-invoice { width: 100% !important; padding: 0 !important; margin: 0 !important; }
             thead { display: table-row-group !important; }
