@@ -325,9 +325,13 @@
                 <div class="form-group">
                   <label class="form-label">Store / Company Name</label>
                   <input type="text" class="form-input" id="set-store-name" value="Fetching...">
-                                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer; margin-top:8px; font-size:12px; color:var(--text-secondary);">
-                    <input type="checkbox" id="set-chk-invoice-show-store-name" checked> Show Store Name on Invoices / Receipts
-                  </label>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Show Store Name on Invoices / Receipts</label>
+                  <select class="form-select" id="set-invoice-show-store-name">
+                    <option value="1">Show</option>
+                    <option value="0">Hide</option>
+                  </select>
                 </div>
                 <div class="form-group">
                   <label class="form-label">Store Address</label>
@@ -505,6 +509,7 @@
         };
 
         document.getElementById('set-store-name').value = settings.store_name || '';
+        document.getElementById('set-invoice-show-store-name').value = settings.invoice_show_store_name || '1';
         document.getElementById('set-store-address').value = settings.store_address || '';
         document.getElementById('set-store-phone').value = settings.store_phone || '';
         document.getElementById('set-store-website').value = settings.store_website || '';
@@ -550,6 +555,7 @@
 
         saveBtn.onclick = async () => {
           const store_name = document.getElementById('set-store-name').value.trim();
+          const invoice_show_store_name = document.getElementById('set-invoice-show-store-name').value;
           const store_address = document.getElementById('set-store-address').value.trim();
           const store_phone = document.getElementById('set-store-phone').value.trim();
           const store_website = document.getElementById('set-store-website').value.trim();
@@ -583,6 +589,7 @@
 
           const res = await S.updateSettings({ 
             store_name, 
+            invoice_show_store_name,
             store_address, 
             store_phone, 
             store_website,
