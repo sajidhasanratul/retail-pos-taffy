@@ -122,7 +122,7 @@
         <style>
           *{margin:0;padding:0;box-sizing:border-box}
           body{font-family:'Inter',sans-serif;padding:30px;color:#1e293b;font-size:13px}
-          body.receipt-body { padding: 10px; font-size: 11px; color: #000; }
+          body.receipt-body { padding: 2px; font-size: 11px; color: #000; }
           body.receipt-body * { font-size: 11px; }
           body.receipt-body h3 { font-size: 14px !important; }
           body.receipt-body h4 { font-size: 12px !important; }
@@ -409,7 +409,7 @@
           @media print {
             @page { margin: 0; }
             body { padding: 0 !important; margin: 0 !important; }
-            body.receipt-body { padding: 4mm !important; }
+            body.receipt-body { padding: 1mm !important; }
             .product-label { border: none !important; }
             .paper-invoice { width: 100% !important; padding: 0 !important; margin: 0 !important; }
             thead { display: table-row-group !important; }
@@ -441,16 +441,31 @@
       if (!paymentsList) paymentsList = [];
 
       let itemsHtml = '';
-      items.forEach(item => {
-        itemsHtml += `
-          <tr>
-            <td>${this.esc(item.productName)} ${item.variationName ? `<br><small style="color:#555">${this.esc(item.variationName)}</small>` : ''}</td>
-            <td class="text-center">${item.qty}</td>
-            <td class="text-right">${this.formatCurrency(item.unitPrice)}</td>
-            <td class="text-right">${this.formatCurrency(item.total || (item.unitPrice * item.qty))}</td>
-          </tr>
-        `;
-      });
+      if (printType === 'receipt') {
+        items.forEach(item => {
+          const varText = item.variationName ? ` (${this.esc(item.variationName)})` : '';
+          itemsHtml += `
+            <div style="padding: 4px 0; border-bottom: 1px dashed #ddd; font-size: 11px;">
+              <div style="font-weight: 700; word-break: break-word;">${this.esc(item.productName)}${varText}</div>
+              <div style="display: flex; justify-content: space-between; font-size: 10px; color: #333; margin-top: 2px;">
+                <span>${item.qty} x ${this.formatCurrency(item.unitPrice)}</span>
+                <strong>${this.formatCurrency(item.total || (item.unitPrice * item.qty))}</strong>
+              </div>
+            </div>
+          `;
+        });
+      } else {
+        items.forEach(item => {
+          itemsHtml += `
+            <tr>
+              <td>${this.esc(item.productName)} ${item.variationName ? `<br><small style="color:#555">${this.esc(item.variationName)}</small>` : ''}</td>
+              <td class="text-center">${item.qty}</td>
+              <td class="text-right">${this.formatCurrency(item.unitPrice)}</td>
+              <td class="text-right">${this.formatCurrency(item.total || (item.unitPrice * item.qty))}</td>
+            </tr>
+          `;
+        });
+      }
 
       const storeName = (settings.store_name || '').trim();
       const storeAddress = settings.store_address || '';
@@ -476,19 +491,9 @@
               <div><strong>Date:</strong> ${this.formatDateTime(order.date)}</div>
             </div>
             <hr>
-            <table style="width:100%;">
-              <thead>
-                <tr>
-                  <th style="text-align:left;">Item</th>
-                  <th style="text-align:center; width:40px;">Qty</th>
-                  <th style="text-align:right; width:60px;">Price</th>
-                  <th style="text-align:right; width:70px;">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${itemsHtml}
-              </tbody>
-            </table>
+            <div style="margin: 6px 0;">
+              ${itemsHtml}
+            </div>
             
             <div class="totals" style="font-size: 11px;">
               <p>Sub Total: <strong>${this.formatCurrency(order.subtotal)}</strong></p>
