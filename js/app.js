@@ -465,6 +465,9 @@
         `;
 
         const settings = await S.getSettings();
+        console.log('--- SYSTEM SETTINGS LOADED ---');
+        console.log(settings);
+        console.log('------------------------------');
         
         let activeLogo = settings.invoice_logo || '';
         const logoPreview = document.getElementById('set-logo-preview');
