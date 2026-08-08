@@ -950,15 +950,36 @@ app.get('/api/products', async (req, res) => {
 app.post('/api/products', verifyRole(['admin', 'manager']), async (req, res) => {
   try {
     const { id, name, sku, barcode, categoryId, costPrice, sellingPrice, stock, alertQty, image, tag, status, priority, variations } = req.body;
+    
+    // Safely default undefined fields to prevent MySQL driver bind errors
+    const nameVal = name !== undefined ? name : '';
+    const skuVal = sku !== undefined ? sku : '';
+    const barcodeVal = barcode !== undefined ? barcode : null;
+    const catIdVal = categoryId !== undefined ? categoryId : null;
+    const costVal = costPrice !== undefined ? costPrice : 0.00;
+    const sellVal = sellingPrice !== undefined ? sellingPrice : 0.00;
+    const stockVal = stock !== undefined ? stock : 0;
+    const alertVal = alertQty !== undefined ? alertQty : 5;
+    const imageVal = image !== undefined ? image : null;
+    const tagVal = tag !== undefined ? tag : null;
+    const statusVal = status !== undefined ? status : 'Publish';
+    const priorityVal = priority !== undefined ? parseInt(priority) : 0;
+
     await dbQuery(`INSERT INTO products (id, name, sku, barcode, categoryId, costPrice, sellingPrice, stock, alertQty, image, tag, status, priority) 
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, name, sku, barcode, categoryId, costPrice, sellingPrice, stock, alertQty, image, tag || null, status || 'Publish', parseInt(priority) || 0]);
+      [id, nameVal, skuVal, barcodeVal, catIdVal, costVal, sellVal, stockVal, alertVal, imageVal, tagVal, statusVal, priorityVal]);
 
     if (variations && variations.length > 0) {
       for (const v of variations) {
+        const vSku = v.sku !== undefined ? v.sku : null;
+        const vBarcode = v.barcode !== undefined ? v.barcode : null;
+        const vPrice = v.price !== undefined ? v.price : 0.00;
+        const vCost = v.costPrice !== undefined ? v.costPrice : 0.00;
+        const vStock = v.stock !== undefined ? v.stock : 0;
+
         await dbQuery(`INSERT INTO variations (id, productId, name, sku, barcode, price, costPrice, stock) 
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [v.id, id, v.name, v.sku, v.barcode, v.price, v.costPrice, v.stock]);
+          [v.id, id, v.name, vSku, vBarcode, vPrice, vCost, vStock]);
       }
     }
     res.json({ success: true });
@@ -1035,16 +1056,36 @@ app.put('/api/products/:id', verifyRole(['admin', 'manager']), async (req, res) 
     const pid = req.params.id;
     const { name, sku, barcode, categoryId, costPrice, sellingPrice, stock, alertQty, image, tag, status, priority, variations } = req.body;
 
+    // Safely default undefined fields to prevent MySQL driver bind errors
+    const nameVal = name !== undefined ? name : '';
+    const skuVal = sku !== undefined ? sku : '';
+    const barcodeVal = barcode !== undefined ? barcode : null;
+    const catIdVal = categoryId !== undefined ? categoryId : null;
+    const costVal = costPrice !== undefined ? costPrice : 0.00;
+    const sellVal = sellingPrice !== undefined ? sellingPrice : 0.00;
+    const stockVal = stock !== undefined ? stock : 0;
+    const alertVal = alertQty !== undefined ? alertQty : 5;
+    const imageVal = image !== undefined ? image : null;
+    const tagVal = tag !== undefined ? tag : null;
+    const statusVal = status !== undefined ? status : 'Publish';
+    const priorityVal = priority !== undefined ? parseInt(priority) : 0;
+
     await dbQuery(`UPDATE products SET name = ?, sku = ?, barcode = ?, categoryId = ?, costPrice = ?, 
       sellingPrice = ?, stock = ?, alertQty = ?, image = ?, tag = ?, status = ?, priority = ? WHERE id = ?`,
-      [name, sku, barcode, categoryId, costPrice, sellingPrice, stock, alertQty, image, tag || null, status || 'Publish', parseInt(priority) || 0, pid]);
+      [nameVal, skuVal, barcodeVal, catIdVal, costVal, sellVal, stockVal, alertVal, imageVal, tagVal, statusVal, priorityVal, pid]);
 
     await dbQuery(`DELETE FROM variations WHERE productId = ?`, [pid]);
     if (variations && variations.length > 0) {
       for (const v of variations) {
+        const vSku = v.sku !== undefined ? v.sku : null;
+        const vBarcode = v.barcode !== undefined ? v.barcode : null;
+        const vPrice = v.price !== undefined ? v.price : 0.00;
+        const vCost = v.costPrice !== undefined ? v.costPrice : 0.00;
+        const vStock = v.stock !== undefined ? v.stock : 0;
+
         await dbQuery(`INSERT INTO variations (id, productId, name, sku, barcode, price, costPrice, stock) 
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [v.id, pid, v.name, v.sku, v.barcode, v.price, v.costPrice, v.stock]);
+          [v.id, pid, v.name, vSku, vBarcode, vPrice, vCost, vStock]);
       }
     }
     res.json({ success: true });
@@ -1190,7 +1231,7 @@ app.get('/api/customers', async (req, res) => {
   }
 });
 
-app.post('/api/customers', verifyRole(['admin', 'manager']), async (req, res) => {
+app.post('/api/customers', verifyRole(['admin', 'manager', 'cashier']), async (req, res) => {
   try {
     const { id, name, phone, email, label, customDiscount, address } = req.body;
     await dbQuery(`INSERT INTO customers (id, name, phone, email, label, customDiscount, address) 
@@ -1201,7 +1242,7 @@ app.post('/api/customers', verifyRole(['admin', 'manager']), async (req, res) =>
   }
 });
 
-app.put('/api/customers/:id', verifyRole(['admin', 'manager']), async (req, res) => {
+app.put('/api/customers/:id', verifyRole(['admin', 'manager', 'cashier']), async (req, res) => {
   try {
     const cid = req.params.id;
     const { name, phone, email, label, customDiscount, address } = req.body;
@@ -1213,7 +1254,7 @@ app.put('/api/customers/:id', verifyRole(['admin', 'manager']), async (req, res)
   }
 });
 
-app.delete('/api/customers/:id', verifyRole(['admin', 'manager']), async (req, res) => {
+app.delete('/api/customers/:id', verifyRole(['admin', 'manager', 'cashier']), async (req, res) => {
   try {
     const cid = req.params.id;
     await dbQuery(`DELETE FROM customers WHERE id = ?`, [cid]);
