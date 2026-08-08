@@ -303,8 +303,8 @@ const initDB = async () => {
   if (settingsCount[0].count === 0) {
     await dbQuery(`INSERT INTO settings (key_name, val) VALUES 
       ('store_name', 'ZenPos Store'),
-      ('store_address', '123 Market Street, Dhaka'),
       ('invoice_show_store_name', '1'),
+      ('store_address', '123 Market Street, Dhaka'),
       ('store_phone', '01700000000'),
       ('store_website', 'www.zenpos.com'),
       ('invoice_note', 'Goods once sold cannot be returned or exchanged.'),
@@ -657,7 +657,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
 // ── Settings Endpoints ───────────────────────────
 app.get('/api/settings', async (req, res) => {
   try {
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     const rows = await dbQuery(`SELECT * FROM settings`);
     const settings = {};
     rows.forEach(r => {
@@ -1073,6 +1073,107 @@ app.post('/api/products/:id/restore', verifyRole(['admin', 'manager']), async (r
   try {
     const pid = req.params.id;
     await dbQuery(`UPDATE products SET deletedAt = NULL WHERE id = ?`, [pid]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Bulk scan resolve and update endpoints
+app.get('/api/products/resolve-scan', async (req, res) => {
+  try {
+    const { query } = req.query;
+    if (!query) {
+      return res.status(400).json({ error: 'Missing query parameter' });
+    }
+
+    const code = String(query).trim();
+
+    // 1. Try variations first
+    const varRows = await dbQuery(`
+      SELECT v.id as variationId, v.productId, v.name as variationName, v.sku, v.barcode, p.name as productName, v.stock
+      FROM variations v
+      JOIN products p ON v.productId = p.id
+      WHERE v.sku = ? OR v.barcode = ?
+    `, [code, code]);
+
+    if (varRows.length > 0) {
+      const row = varRows[0];
+      return res.json({
+        success: true,
+        item: {
+          type: 'variation',
+          id: row.variationId,
+          productId: row.productId,
+          name: `${row.productName} (${row.variationName})`,
+          sku: row.sku || '',
+          barcode: row.barcode || '',
+          currentStock: row.stock || 0
+        }
+      });
+    }
+
+    // 2. Try products
+    const prodRows = await dbQuery(`
+      SELECT id as productId, name as productName, sku, barcode, stock
+      FROM products
+      WHERE sku = ? OR barcode = ?
+    `, [code, code]);
+
+    if (prodRows.length > 0) {
+      const row = prodRows[0];
+      return res.json({
+        success: true,
+        item: {
+          type: 'product',
+          id: row.productId,
+          productId: row.productId,
+          name: row.productName,
+          sku: row.sku || '',
+          barcode: row.barcode || '',
+          currentStock: row.stock || 0
+        }
+      });
+    }
+
+    res.json({ success: false, error: 'No matching product or variation found' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/products/bulk-stock-update', verifyRole(['admin', 'manager']), async (req, res) => {
+  try {
+    const updates = req.body;
+    if (!Array.isArray(updates)) {
+      return res.status(400).json({ error: 'Body must be an array of updates' });
+    }
+
+    const parentProductIdsToRecalculate = new Set();
+
+    for (const update of updates) {
+      const { type, id, qty } = update;
+      const amount = parseInt(qty) || 0;
+      if (amount === 0) continue;
+
+      if (type === 'product') {
+        await dbQuery(`UPDATE products SET stock = stock + ? WHERE id = ?`, [amount, id]);
+      } else if (type === 'variation') {
+        await dbQuery(`UPDATE variations SET stock = stock + ? WHERE id = ?`, [amount, id]);
+        const varRows = await dbQuery(`SELECT productId FROM variations WHERE id = ?`, [id]);
+        if (varRows.length > 0) {
+          parentProductIdsToRecalculate.add(varRows[0].productId);
+        }
+      }
+    }
+
+    // Recalculate parent product stocks
+    for (const pid of parentProductIdsToRecalculate) {
+      const sumRows = await dbQuery(`SELECT SUM(stock) as totalStock FROM variations WHERE productId = ?`, [pid]);
+      const totalStock = parseInt(sumRows[0].totalStock) || 0;
+      await dbQuery(`UPDATE products SET stock = ? WHERE id = ?`, [totalStock, pid]);
+    }
+
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
