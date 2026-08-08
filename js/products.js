@@ -78,6 +78,9 @@
               <input type="file" id="file-import-csv" accept=".csv,.xlsx,.xls" style="display:none;">
             </label>
             <button class="btn btn-secondary btn-sm" id="btn-manage-categories">📁 Categories</button>
+            ${(S.getCurrentUser().role === 'admin' || S.getCurrentUser().role === 'manager') ? `
+              <button class="btn btn-secondary btn-sm" id="btn-bulk-scan-stock" style="background: #f0fdf4; border-color: #bbf7d0; color: #16a34a; font-weight: 700;">⚡ Bulk Scan Stock</button>
+            ` : ''}
             <button class="btn btn-primary btn-sm" id="btn-add-product">+ Add Product</button>
           </div>
         </div>
@@ -155,6 +158,10 @@
       // Event handlers
       document.getElementById('btn-add-product').onclick = () => this.showAddEditModal(null);
       document.getElementById('btn-manage-categories').onclick = () => this.showManageCategoriesModal();
+      const btnBulkScan = document.getElementById('btn-bulk-scan-stock');
+      if (btnBulkScan) {
+        btnBulkScan.onclick = () => this.showBulkScanStockModal();
+      }
 
       document.getElementById('btn-export-csv').onclick = async () => {
         const res = await fetch(`${window.location.origin}/api/products?includeTrashed=true`, {
@@ -209,7 +216,7 @@
               'salePrice': p.sellingPrice,
               'regular_price': p.sellingPrice,
               'costPrice': p.costPrice,
-              'quantity': 0,
+              'quantity': p.stock,
               'variation_name': '',
               'variation_value': '',
               'variation_sku': '',
@@ -447,6 +454,279 @@
 
       // Initial load
       await this.updateList();
+    },
+
+    showBulkScanStockModal() {
+      const S = POS.Store;
+      const H = POS.Helpers;
+
+      let modalOverlay = document.getElementById('bulk-scan-modal-overlay');
+      if (!modalOverlay) {
+        modalOverlay = document.createElement('div');
+        modalOverlay.id = 'bulk-scan-modal-overlay';
+        modalOverlay.className = 'modal-overlay';
+        document.body.appendChild(modalOverlay);
+      }
+
+      modalOverlay.innerHTML = `
+        <div class="modal animate" style="max-width:850px; width:90%; height:85vh; display:flex; flex-direction:column; padding:0;">
+          <div class="modal-header" style="padding:16px 20px; border-bottom:1px solid var(--border-light);">
+            <h3>⚡ Bulk Scan Stock Update</h3>
+            <button class="modal-close" id="modal-close-bulk-scan">&times;</button>
+          </div>
+          <div class="modal-body" style="flex:1; display:flex; flex-direction:column; padding:20px; gap:16px; overflow:hidden;">
+            
+            <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:var(--radius-sm); padding:12px; font-size:12px; color:#1e40af; line-height:1.4; display:flex; gap:10px; align-items:center;">
+              <span style="font-size:20px;">💡</span>
+              <div>
+                <strong>Instructions:</strong> Scan a product's barcode or type the SKU/Barcode manually in the input below and press Enter. 
+                Each scan increments the addition count by 1. You can also adjust counts manually in the list below. 
+                Click <strong>Confirm & Add to Stock</strong> when finished.
+              </div>
+            </div>
+
+            <div style="display:flex; gap:12px; align-items:flex-end;">
+              <div style="flex:1;">
+                <label class="form-label" style="font-weight:700;">Scan Barcode / Enter SKU</label>
+                <div style="display:flex; gap:8px;">
+                  <input type="text" class="form-input" id="bulk-scan-input" placeholder="Scan barcode or type SKU / Barcode and press Enter..." autocomplete="off" style="font-size:14px; padding:10px 14px;">
+                  <button class="btn btn-primary" id="btn-bulk-scan-trigger" style="white-space:nowrap; padding:0 20px;">🔍 Search</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Scanned List Table -->
+            <div style="flex:1; border:1px solid #edf2f7; border-radius:var(--radius-sm); overflow-y:auto; background:#fff;">
+              <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:left;">
+                <thead>
+                  <tr style="background:#f8fafc; border-bottom:1px solid #edf2f7;">
+                    <th style="padding:12px; font-weight:700; color:#475569; width:50%;">Product / Variation</th>
+                    <th style="padding:12px; font-weight:700; color:#475569; width:20%;">SKU / Barcode</th>
+                    <th style="padding:12px; font-weight:700; color:#475569; width:15%; text-align:center;">Current Stock</th>
+                    <th style="padding:12px; font-weight:700; color:#475569; width:15%; text-align:center;">Scanned Qty (To Add)</th>
+                    <th style="padding:12px; font-weight:700; color:#475569; width:80px; text-align:center;">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="bulk-scan-tbody">
+                  <tr>
+                    <td colspan="5" style="padding:40px; text-align:center; color:#94a3b8; font-style:italic;">
+                      No items scanned yet. Start scanning to add stock!
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+          <div class="modal-footer" style="padding:16px 20px; border-top:1px solid var(--border-light); background:#f8fafc; display:flex; justify-content:space-between; align-items:center;">
+            <div id="bulk-scan-summary" style="font-weight:700; color:#475569;">Total Scanned Items: 0</div>
+            <div style="display:flex; gap:10px;">
+              <button class="btn btn-secondary" id="btn-bulk-scan-cancel">Cancel</button>
+              <button class="btn btn-primary" id="btn-bulk-scan-confirm" style="background:#16a34a; border-color:#16a34a;" disabled>Confirm & Add to Stock</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      modalOverlay.classList.add('active');
+
+      const scannedItems = [];
+
+      const input = modalOverlay.querySelector('#bulk-scan-input');
+      const tbody = modalOverlay.querySelector('#bulk-scan-tbody');
+      const confirmBtn = modalOverlay.querySelector('#btn-bulk-scan-confirm');
+      const summaryText = modalOverlay.querySelector('#bulk-scan-summary');
+      const searchBtn = modalOverlay.querySelector('#btn-bulk-scan-trigger');
+
+      setTimeout(() => input.focus(), 100);
+
+      modalOverlay.querySelector('.modal-body').onclick = () => {
+        if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'BUTTON') {
+          input.focus();
+        }
+      };
+
+      const renderScannedList = () => {
+        if (scannedItems.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="5" style="padding:40px; text-align:center; color:#94a3b8; font-style:italic;">
+                No items scanned yet. Start scanning to add stock!
+              </td>
+            </tr>
+          `;
+          confirmBtn.disabled = true;
+          summaryText.textContent = `Total Scanned Items: 0`;
+          return;
+        }
+
+        tbody.innerHTML = scannedItems.map((item, idx) => {
+          return `
+            <tr style="border-bottom: 1px solid #edf2f7;">
+              <td style="padding: 12px; font-weight: 600; color: #1e293b;">${H.esc(item.name)}</td>
+              <td style="padding: 12px; font-family: monospace; color: #475569;">${H.esc(item.sku || item.barcode || 'N/A')}</td>
+              <td style="padding: 12px; text-align: center; color: #64748b;">${item.currentStock}</td>
+              <td style="padding: 12px; text-align: center;">
+                <div style="display: inline-flex; align-items: center; gap: 8px;">
+                  <button class="btn-qty-minus" data-idx="${idx}" style="width:24px; height:24px; border-radius:50%; border:1px solid #cbd5e1; background:#f8fafc; color:#0f172a; font-weight:700; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center;">-</button>
+                  <span style="font-weight:700; font-size:14px; width:30px; text-align:center;">${item.qty}</span>
+                  <button class="btn-qty-plus" data-idx="${idx}" style="width:24px; height:24px; border-radius:50%; border:1px solid #cbd5e1; background:#f8fafc; color:#0f172a; font-weight:700; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center;">+</button>
+                </div>
+              </td>
+              <td style="padding: 12px; text-align: center;">
+                <button class="btn-remove-scan" data-idx="${idx}" style="background:none; border:none; color:#ef4444; font-size:16px; cursor:pointer; padding:4px;">🗑️</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        confirmBtn.disabled = false;
+        const totalItems = scannedItems.reduce((sum, i) => sum + i.qty, 0);
+        summaryText.textContent = `Total Scanned Items: ${totalItems} (${scannedItems.length} unique)`;
+
+        tbody.querySelectorAll('.btn-qty-minus').forEach(btn => {
+          btn.onclick = () => {
+            const idx = parseInt(btn.dataset.idx);
+            if (scannedItems[idx].qty > 1) {
+              scannedItems[idx].qty--;
+              renderScannedList();
+            }
+          };
+        });
+
+        tbody.querySelectorAll('.btn-qty-plus').forEach(btn => {
+          btn.onclick = () => {
+            const idx = parseInt(btn.dataset.idx);
+            scannedItems[idx].qty++;
+            renderScannedList();
+          };
+        });
+
+        tbody.querySelectorAll('.btn-remove-scan').forEach(btn => {
+          btn.onclick = () => {
+            const idx = parseInt(btn.dataset.idx);
+            scannedItems.splice(idx, 1);
+            renderScannedList();
+            input.focus();
+          };
+        });
+      };
+
+      const handleScanQuery = async () => {
+        const query = input.value.trim();
+        if (!query) return;
+
+        input.value = '';
+        input.disabled = true;
+
+        try {
+          const res = await fetch(`${window.location.origin}/api/products/resolve-scan?query=${encodeURIComponent(query)}`, {
+            headers: S.getHeaders()
+          });
+          const data = await res.json();
+          if (data.success) {
+            const item = data.item;
+            const existing = scannedItems.find(i => i.id === item.id && i.type === item.type);
+            if (existing) {
+              existing.qty++;
+            } else {
+              scannedItems.push({
+                type: item.type,
+                id: item.id,
+                name: item.name,
+                sku: item.sku,
+                barcode: item.barcode,
+                currentStock: item.currentStock,
+                qty: 1
+              });
+            }
+            renderScannedList();
+            try {
+              const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+              const oscillator = audioCtx.createOscillator();
+              const gainNode = audioCtx.createGain();
+              oscillator.connect(gainNode);
+              gainNode.connect(audioCtx.destination);
+              oscillator.type = 'sine';
+              oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+              gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+              oscillator.start();
+              oscillator.stop(audioCtx.currentTime + 0.08);
+            } catch (e) {}
+          } else {
+            H.showToast(`Not Found: "${query}" matches no products or SKU codes`, 'error');
+            try {
+              const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+              const oscillator = audioCtx.createOscillator();
+              const gainNode = audioCtx.createGain();
+              oscillator.connect(gainNode);
+              gainNode.connect(audioCtx.destination);
+              oscillator.type = 'sawtooth';
+              oscillator.frequency.setValueAtTime(150, audioCtx.currentTime);
+              gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+              oscillator.start();
+              oscillator.stop(audioCtx.currentTime + 0.25);
+            } catch (e) {}
+          }
+        } catch (err) {
+          console.error(err);
+          H.showToast('Network error resolving scanned code', 'error');
+        } finally {
+          input.disabled = false;
+          input.focus();
+        }
+      };
+
+      input.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          handleScanQuery();
+        }
+      };
+
+      searchBtn.onclick = handleScanQuery;
+
+      const close = () => modalOverlay.classList.remove('active');
+      modalOverlay.querySelector('#modal-close-bulk-scan').onclick = close;
+      modalOverlay.querySelector('#btn-bulk-scan-cancel').onclick = close;
+
+      modalOverlay.querySelector('#btn-bulk-scan-confirm').onclick = async () => {
+        if (scannedItems.length === 0) return;
+
+        const confirmBtn = modalOverlay.querySelector('#btn-bulk-scan-confirm');
+        confirmBtn.disabled = true;
+        confirmBtn.innerText = 'Updating Stock...';
+
+        try {
+          const updates = scannedItems.map(i => ({
+            type: i.type,
+            id: i.id,
+            qty: i.qty
+          }));
+
+          const res = await fetch(`${window.location.origin}/api/products/bulk-stock-update`, {
+            method: 'POST',
+            headers: S.getHeaders(),
+            body: JSON.stringify(updates)
+          });
+
+          const data = await res.json();
+          if (data.success) {
+            H.showToast(`Successfully added stock for ${scannedItems.length} items!`);
+            close();
+            await this.updateList();
+          } else {
+            H.showToast(data.error || 'Failed to update stock', 'error');
+            confirmBtn.disabled = false;
+            confirmBtn.innerText = 'Confirm & Add to Stock';
+          }
+        } catch (err) {
+          console.error(err);
+          H.showToast('Network error updating stock', 'error');
+          confirmBtn.disabled = false;
+          confirmBtn.innerText = 'Confirm & Add to Stock';
+        }
+      };
     },
 
     async updateList() {
