@@ -623,6 +623,9 @@
           const res = await fetch(`${window.location.origin}/api/products/resolve-scan?query=${encodeURIComponent(query)}`, {
             headers: S.getHeaders()
           });
+          if (!res.ok) {
+            throw new Error(`Server returned HTTP ${res.status}`);
+          }
           const data = await res.json();
           if (data.success) {
             const item = data.item;
@@ -670,7 +673,7 @@
           }
         } catch (err) {
           console.error(err);
-          H.showToast('Network error resolving scanned code', 'error');
+          H.showToast(`Network error: ${err.message}`, 'error');
         } finally {
           input.disabled = false;
           input.focus();
